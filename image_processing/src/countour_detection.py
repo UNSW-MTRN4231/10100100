@@ -10,6 +10,19 @@ class ImageProcessingNode(Node):
             self.image_callback,
             10)
         self.pubscription
+        self.srv = self.create_service(CustomService, 'custom_service', self.callback)
+
+    def callback(self, request, response):
+        # Process the request containing an array of two integers
+        x, y = request.data
+        self.get_logger().info(f"Received request with data: ({x}, {y})")
+
+        # Create an example response with an array of points (OpenCV contours)
+        contour = np.array([[x, y], [x + 10, y + 10], [x + 20, y + 20]], np.int32)
+        response.points.append(Point(x=x, y=y))
+        response.points.append(Point(x=x+10, y=y+10))
+        response.points.append(Point(x=x+20, y=y+20))
+        return response
 
     def Tobinray(self, img):
         imgray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)

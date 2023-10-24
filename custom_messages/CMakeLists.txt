@@ -7,7 +7,8 @@ find_package(rosidl_default_generators REQUIRED)
 
 # Define the custom message files
 set(msg_files
-  "msg/RobotAction.msg" # Replace with the actual path to your .msg file
+  "msg/RobotAction.msg" 
+  "msg/ArucoMessage.msg"
 )
 
 # Generate ROS 2 custom messages

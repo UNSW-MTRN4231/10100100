@@ -150,7 +150,7 @@ class move_to_marker : public rclcpp::Node
   std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface;
   std::string fromFrameRel = "base_link";
-  std::string toFrameRel = "next_point";
+  std::string toFrameRel = "paper_corner_1";
    geometry_msgs::msg::TransformStamped t;
 };
 

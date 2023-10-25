@@ -12,6 +12,10 @@ find_package(geometry_msgs REQUIRED)
 find_package(tf2_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(custom_messages REQUIRED)
+find_package(moveit_core REQUIRED)
+find_package(moveit_ros_planning REQUIRED)
+find_package(moveit_ros_planning_interface REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 # Add executable
 add_executable(brain_node src/brain_node.cpp)
@@ -23,6 +27,26 @@ ament_target_dependencies(brain_node
   tf2_msgs
   std_msgs
   custom_messages
+)
+
+
+
+# Declare the C++ executable
+add_executable(moveit src/moveit.cpp)
+
+# Link the executable to the required libraries
+ament_target_dependencies(moveit
+  rclcpp
+  std_msgs
+  moveit_core
+  moveit_ros_planning
+  moveit_ros_planning_interface
+  tf2_ros
+)
+
+# Install the executable
+install(TARGETS moveit
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)

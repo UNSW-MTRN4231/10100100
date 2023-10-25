@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>transforms</name>
+  <name>locator</name>
   <version>0.1.0</version>
   <description>A ROS 2 package for handling transforms</description>
   <maintainer email="your_email@example.com">Your Name</maintainer>

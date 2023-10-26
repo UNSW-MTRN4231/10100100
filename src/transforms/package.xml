@@ -11,6 +11,14 @@
 
   <depend>rclcpp</depend>
   <depend>rclpy</depend>
+  <depend>ros2_aruco_interfaces</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>custom_messages</depend> <!-- Add your custom message package -->
+  <depend>sensor_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

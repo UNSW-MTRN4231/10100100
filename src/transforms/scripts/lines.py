@@ -15,10 +15,10 @@ from sensor_msgs.msg import CameraInfo, Image
 from geometry_msgs.msg import PoseArray, Pose
 from ros2_aruco_interfaces.msg import ArucoMarkers
 from rcl_interfaces.msg import ParameterDescriptor, ParameterType
-from ArucoMessages.msg import RobotAction
+from custom_messages import RobotAction
 
 
-class line(Node):
+class lines(Node):
 
     def __init__(self):
     super().__init__('line')
@@ -41,12 +41,19 @@ class line(Node):
 
         source_frame = "paper_corner_3"
         target_frame = "base_frame"
-        corner2 = tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
+        corner3 = tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
-        paper_lenght = 
 
-        index = iter(msg.x)
-        for i in index
+        # need to check if these produce messurments in the right sign. Could have gotten confuesed with axies orientations.
+        paper_hight = corner1.transform.translation.x - corner2.transform.translation.x
+        paper_lenght = corner1.transform.translation.x - corner3.transform.translation.x
+        paper_ratio = paper_hight / paper_lenght
+
+
+
+
+        # index = iter(msg.x)
+        # for i in index
 
 
 

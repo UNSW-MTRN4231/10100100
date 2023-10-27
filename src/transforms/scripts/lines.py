@@ -29,6 +29,11 @@ class lines(rclpy.Node):
         self.tf_broadcaster_ = TransformBroadcaster(self)  # Pass 'self' to the constructor
         self.tf_listener = TransformListener(self)  # Pass 'self' to the constructor
 
+    def handle_exceptions(self, source_frame, target_frame):
+        try:
+            corner1 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
+        except LookupException as e:
+            self.get_logger().error(f"Error looking up transformation: {str(e)}")
 
 
     def topic_callback(self, msg):
@@ -37,18 +42,22 @@ class lines(rclpy.Node):
         # paper is horezontal, simmilar to table.
         source_frame = "paper_corner_1"
         target_frame = "base_frame"
+        self.handle_exeptions(self, source_frame, target_frame)
         corner1 = tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
         source_frame = "paper_corner_2"
         target_frame = "base_frame"
+        self.handle_exeptions(self, source_frame, target_frame)
         corner2 = tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
         source_frame = "paper_corner_3"
         target_frame = "base_frame"
+        self.handle_exeptions(self, source_frame, target_frame)
         corner3 = tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
         source_frame = "paper_corner_4"
         target_frame = "base_frame"
+        self.handle_exeptions(self, source_frame, target_frame)
         corner4 = tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
 

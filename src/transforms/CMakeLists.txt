@@ -16,6 +16,7 @@ find_package(std_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(custom_messages REQUIRED)
+find_package(cv_bridge REQUIRED) 
 
 # Add your source files for 'paper'
 set(PAPER_SRC_FILES
@@ -56,11 +57,11 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# Install launch files
-install(DIRECTORY
-  launch
-  DESTINATION share/${PROJECT_NAME}
-)
+# # Install launch files
+# install(DIRECTORY
+#   launch
+#   DESTINATION share/${PROJECT_NAME}
+# )
 
 # if(BUILD_TESTING)
 #   find_package(ament_lint_auto REQUIRED)

@@ -20,12 +20,15 @@ from custom_messages import RobotAction
 import cv2
 import numpy as np
 
+from my_robot_interfaces.srv import MyService
+
+
 
 class lines(rclpy.Node):
 
     def __init__(self):
         super().__init__('line')
-        self.subscription = self.create_subscription(RobotAction, 'robot_action', self.topic_callback, 10)
+        # self.subscription = self.create_subscription(RobotAction, 'robot_action', self.topic_callback, 10)
         self.tf_broadcaster_ = TransformBroadcaster(self)  # Pass 'self' to the constructor
         self.tf_listener = TransformListener(self)  # Pass 'self' to the constructor
 
@@ -36,29 +39,29 @@ class lines(rclpy.Node):
             self.get_logger().error(f"Error looking up transformation: {str(e)}")
 
 
-    def topic_callback(self, msg):
+    def robot_action_service_callback(self, msg, responce):
 
         # assuming aruco markers go 1,2,3,4 clockwise. 1 is futhest away from robot base
         # paper is horezontal, simmilar to table.
         source_frame = "paper_corner_1"
         target_frame = "base_frame"
-        self.handle_exeptions(self, source_frame, target_frame)
-        corner1 = tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
+        self.handle_exceptions(self, source_frame, target_frame)
+        corner1 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
         source_frame = "paper_corner_2"
         target_frame = "base_frame"
-        self.handle_exeptions(self, source_frame, target_frame)
-        corner2 = tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
+        self.handle_exceptions(self, source_frame, target_frame)
+        corner2 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
         source_frame = "paper_corner_3"
         target_frame = "base_frame"
-        self.handle_exeptions(self, source_frame, target_frame)
-        corner3 = tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
+        self.handle_exceptions(self, source_frame, target_frame)
+        corner3 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
         source_frame = "paper_corner_4"
         target_frame = "base_frame"
-        self.handle_exeptions(self, source_frame, target_frame)
-        corner4 = tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
+        self.handle_exceptions(self, source_frame, target_frame)
+        corner4 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
 
         # need to check if these produce messurments in the right sign. Could have gotten confuesed with axies orientations.
@@ -98,9 +101,8 @@ class lines(rclpy.Node):
         print(H)
 
         # take homography matrix and multiply it by the robot_action points to get global points
-        index = iter(msg.x)
-        for i in index:
-            transformed_point = np.dot(H, [msg.x[i], msg.y[i], 1])
+        for x, y in zip(msg.x, msg.y):
+            transformed_point = np.dot(H, [x, y, 1])
 
             # Access the transformed coordinates
             transformed_x, transformed_y, w = transformed_point
@@ -118,10 +120,13 @@ class lines(rclpy.Node):
             dynamic_transform.transform.rotation.w = 0.0  # Update rotation
 
             # Set the timestamp
-            dynamic_transform.header.stamp = node.get_clock().now().to_msg()
+            dynamic_transform.header.stamp = self.get_clock().now().to_msg()
 
             # Broadcast the dynamic transformation
-            tf_broadcaster.sendTransform(dynamic_transform)
+            self.tf_broadcaster.sendTransform(dynamic_transform)
+
+        responce.result = 1
+
 
 
 
@@ -138,6 +143,7 @@ class lines(rclpy.Node):
 def main(args=None):
     rclpy.init(args=args)
     node = lines()
+    server = node.create_service(MyService, 'robot_action_service', node.robot_action_service_callback)
     rclpy.spin(node)
     rclpy.shutdown()
 

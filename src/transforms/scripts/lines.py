@@ -113,7 +113,7 @@ class lines(rclpy.Node):
             # Create a dynamic transformation from "base_frame" to "child_frame"
             dynamic_transform = TransformStamped()
             dynamic_transform.header.frame_id = 'base_frame'
-            dynamic_transform.child_frame_id = 'robot_command'
+            dynamic_transform.child_frame_id = 'robot_action'
             dynamic_transform.transform.translation.x = transformed_x  # Update translation
             dynamic_transform.transform.translation.y = transformed_y
             dynamic_transform.transform.translation.z = 10.0

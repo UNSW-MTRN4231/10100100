@@ -83,12 +83,6 @@ class move_to_marker : public rclcpp::Node
       planning_scene_interface.applyCollisionObject(col_object_backWall);
       planning_scene_interface.applyCollisionObject(col_object_sideWall);
 
-      // I cept this here for innniial debuging
-      subscription_ = this->create_subscription<std_msgs::msg::String>(
-      "keyboard_input", 10, std::bind(&move_to_marker::handle_keypress, this, _1));
-      
-      // Put subscription to brain here 
-
     }
 
     auto generatePoseMsg(double x,double y, double z,float qx,float qy,float qz,float qw) {
@@ -121,9 +115,7 @@ class move_to_marker : public rclcpp::Node
 
       // Check if the transformation is between "ball_frame" and "base_link" 
       std::cout << "updating tf" << std::endl;
-    }
-
-    void handle_keypress(const std_msgs::msg::String & msg) {
+      
       std::cout << msg.data << std::endl;
       if (msg.data == "space") {
         std::cout << "moving to point" << std::endl;
@@ -150,7 +142,7 @@ class move_to_marker : public rclcpp::Node
   std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface;
   std::string fromFrameRel = "base_link";
-  std::string toFrameRel = "paper_corner_1";
+  std::string toFrameRel = "robot_action";
    geometry_msgs::msg::TransformStamped t;
 };
 

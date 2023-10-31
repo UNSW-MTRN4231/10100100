@@ -116,23 +116,23 @@ class move_to_marker : public rclcpp::Node
       // Check if the transformation is between "ball_frame" and "base_link" 
       std::cout << "updating tf" << std::endl;
       
-      std::cout << msg.data << std::endl;
-      if (msg.data == "space") {
-        std::cout << "moving to point" << std::endl;
-        auto msg = generatePoseMsg(t.transform.translation.x, t.transform.translation.y, t.transform.translation.z, 0.0, 0.0, 0.0, 0.0);
-        moveit::planning_interface::MoveGroupInterface::Plan planMessage;
+      // std::cout << msg.data << std::endl;
+      // if (msg.data == "space") {
+      //   std::cout << "moving to point" << std::endl;
+      //   auto msg = generatePoseMsg(t.transform.translation.x, t.transform.translation.y, t.transform.translation.z, 0.0, 0.0, 0.0, 0.0);
+      //   moveit::planning_interface::MoveGroupInterface::Plan planMessage;
 
-        move_group_interface->setPoseTarget(msg);
-        auto success = static_cast<bool>(move_group_interface->plan(planMessage));
+      //   move_group_interface->setPoseTarget(msg);
+      //   auto success = static_cast<bool>(move_group_interface->plan(planMessage));
 
-        //Execute movement to point 1
-        if (success) {
-          move_group_interface->execute(planMessage);
-        } else {
-          std::cout << "Planning failed!" << std::endl;
-        }
-        std::cout << "here" << std::endl;
-      }
+      //   //Execute movement to point 1
+      //   if (success) {
+      //     move_group_interface->execute(planMessage);
+      //   } else {
+      //     std::cout << "Planning failed!" << std::endl;
+      //   }
+      //   std::cout << "here" << std::endl;
+      // }
     }
 
 

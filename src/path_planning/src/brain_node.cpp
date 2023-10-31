@@ -3,6 +3,7 @@
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "custom_messages/msg/robot_action.hpp"
+#include "custom_messages/srv/path_client.hpp"
 #include "tf2_msgs/msg/tf_message.hpp"
 #include "std_msgs/msg/int32_multi_array.hpp"
 #include "geometry_msgs/msg/point32.hpp"
@@ -34,7 +35,7 @@ public:
         // Publish to /commands
         commands_publisher_ = create_publisher<std_msgs::msg::String>("/commands", 10);
 
-        path_client_ = this->create_client<custom_msgs::srv::CustomService>("custom_service");
+        path_client_ = this->create_client<custom_messages::srv::PathClient>("path_client");
 
         while (!path_client_->wait_for_service(std::chrono::seconds(1))) {
             if (!rclcpp::ok()) {
@@ -46,7 +47,7 @@ public:
 
         
         // Publish to /robot_action
-        //robot_action_publisher_ = create_publisher<custom_msgs::msg::RobotAction>("/robot_action", 10);
+        //robot_action_publisher_ = create_publisher<custom_messages::msg::RobotAction>("/robot_action", 10);
 
     }
 
@@ -90,26 +91,28 @@ public:
     void handle_start_process(const std_msgs::msg::Bool::SharedPtr msg) {
         if (msg->data == true && process_started == false) {
             process_started = true;
-            handle_request_first_path();
+            handle_request_path();
         }
     }
 
     void handle_request_path() {
         // Create and populate the request
-        auto request = std::make_shared<custom_msgs::srv::CustomService::Request>();
-        request->data = {colours.size(), colours_processed.size()}; // Array of two integers
+        auto request = std::make_shared<custom_messages::srv::PathClient::Request>();
+        request->colour = {colours.size(), colours_processed.size()}; // Array of two integers
 
         // Send the request to the service
-        auto result_future = client_->async_send_request(request);
+        auto result_future = path_client_->async_send_request(request);
         rclcpp::spin_until_future_complete(this->get_node_base_interface(), result_future);
         if (result_future.get()) {
             RCLCPP_INFO(this->get_logger(), "Received response");
-            processResponse(result_future.get());
+            // process_response(result_future.get());
         } else {
             RCLCPP_ERROR(this->get_logger(), "Failed to receive response.");
         }
 
     }
+
+    void process_response(){}
 
 
 private:
@@ -118,8 +121,8 @@ private:
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr image_obtained_subscriber_;
     rclcpp::Subscription<geometry_msgs::msg::Point32>::SharedPtr path_subscriber_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr commands_publisher_;
-    rclcpp::Client<custom_msgs::srv::CustomService>::SharedPtr path_client_;
-    //rclcpp::Publisher<custom_msgs::msg::RobotAction>::SharedPtr robot_action_publisher_;
+    rclcpp::Client<custom_messages::srv::PathClient>::SharedPtr path_client_;
+    //rclcpp::Publisher<custom_messages::msg::RobotAction>::SharedPtr robot_action_publisher_;
     std::vector<int> colours;
     std::vector<int> colours_processed;
     bool process_started;

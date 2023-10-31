@@ -9,6 +9,7 @@ find_package(rosidl_default_generators REQUIRED)
 set(msg_files
   "msg/RobotAction.msg" 
   "msg/ArucoMessage.msg"
+  "srv/PathClient.srv"
 )
 
 # Generate ROS 2 custom messages

@@ -80,6 +80,25 @@ class lines(rclpy.Node):
 
         # get transform 
             # Define the source points (original points)
+
+            # aruco markers on paper
+        #  1        2
+        #
+        #  4        3
+        #
+
+        # Cammera coordinates
+        #  0,0                  cam_lenght,0
+        #
+        #  0,cam_hight          cam_hight,cam_langth
+
+        #   global axies
+        # x is to the left of robot
+        # y is towards user
+
+        
+
+
         src_points = np.array([
             [corner1.transform.translation.x, corner1.transform.translation.y],  # Point 1
             [corner2.transform.translation.x, corner2.transform.translation.y],  # Point 2
@@ -88,9 +107,9 @@ class lines(rclpy.Node):
         ], dtype=np.float32)
         # Define the destination points (desired points)
         dst_points = np.array([
-            [cam_lenght, cam_hight],  # New position for Point 1
+            [0, 0],  # New position for Point 1
             [cam_lenght, 0],  # New position for Point 2
-            [0, 0],  # New position for Point 3
+            [cam_lenght, cam_hight],  # New position for Point 3
             [0, cam_hight]   # New position for Point 4
         ], dtype=np.float32)
         # Find the perspective transformation matrix (homography)

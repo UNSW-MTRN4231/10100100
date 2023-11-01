@@ -20,7 +20,8 @@ from custom_messages import RobotAction
 import cv2
 import numpy as np
 
-from my_robot_interfaces.srv import MyService
+
+from custom_messages.srv import PathClient
 
 
 
@@ -31,6 +32,13 @@ class lines(rclpy.Node):
         # self.subscription = self.create_subscription(RobotAction, 'robot_action', self.topic_callback, 10)
         self.tf_broadcaster_ = TransformBroadcaster(self)  # Pass 'self' to the constructor
         self.tf_listener = TransformListener(self)  # Pass 'self' to the constructor
+        self.subscription = self.create_subscription(bool, '/request', self.topic_callback, 10)
+        self.client = node.create_client(PathClient, 'path_client')
+
+
+        while not self.cli.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('service not available, waiting again...')
+        self.req = PathClient.Request()
 
     def handle_exceptions(self, source_frame, target_frame):
         try:
@@ -39,7 +47,23 @@ class lines(rclpy.Node):
             self.get_logger().error(f"Error looking up transformation: {str(e)}")
 
 
-    def robot_action_service_callback(self, msg, responce):
+    def topic_callback(self):
+
+        self.req.colour = int(1)
+        self.future = self.cli.call_async(self.req)
+        while True:
+            if self.future.done():
+                break
+
+        try:
+            reponse = minimal_client.future.result()
+        except Exception as e:
+            minimal_client.get_logger().info(
+                'Service call failed %r' % (e,))
+                
+            
+
+
 
         # assuming aruco markers go 1,2,3,4 clockwise. 1 is futhest away from robot base
         # paper is horezontal, simmilar to table.
@@ -58,23 +82,24 @@ class lines(rclpy.Node):
         self.handle_exceptions(self, source_frame, target_frame)
         corner3 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
-        source_frame = "paper_corner_4"
+        source_frame = "paper_corner_4"    sys.exit(load_entry_point('image-processing==0.0.0', 'console_scripts', 'lines')())
+
         target_frame = "base_frame"
         self.handle_exceptions(self, source_frame, target_frame)
         corner4 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
 
         # need to check if these produce messurments in the right sign. Could have gotten confuesed with axies orientations.
-        paper_hight = corner1.transform.translation.x - corner2.transform.translation.x
-        paper_lenght = corner1.transform.translation.x - corner3.transform.translation.x
+        paper_hight = corner1.transform.translation.x - corner3.transform.translation.x
+        paper_lenght = corner1.transform.translation.x - corner2.transform.translation.x
         paper_ratio = paper_hight / paper_lenght
 
         # will add "crop" from camera length resolution "x" variable.
         # this will stop lines from warping during transfromation by keeping the hight/lenght ratio the same as the paper
         cam_hight = 720
         cam_lenght = 1280
-        crop = paper_ratio*cam_lenght/cam_hight
-        cam_lenght = cam_lenght + crop
+        crop = paper_ratio*cam_lenght/cam_hightmsg
+        cam_lenght = abs(cam_lenght + crop)
 
         # might need to recenter the robot_action positions
 
@@ -120,7 +145,7 @@ class lines(rclpy.Node):
         print(H)
 
         # take homography matrix and multiply it by the robot_action points to get global points
-        for x, y in zip(msg.x, msg.y):
+        for x, y in zip(self.future.x, self.future.y):
             transformed_point = np.dot(H, [x, y, 1])
 
             # Access the transformed coordinates
@@ -150,6 +175,7 @@ class lines(rclpy.Node):
 
 
 
+from custom_messages.srv import PathClient
 
 
 
@@ -158,11 +184,9 @@ class lines(rclpy.Node):
 
 
 
-
 def main(args=None):
     rclpy.init(args=args)
     node = lines()
-    server = node.create_service(MyService, 'robot_action_service', node.robot_action_service_callback)
     rclpy.spin(node)
     rclpy.shutdown()
 

@@ -1,4 +1,5 @@
 import numpy as np
+from custom_messages.srv import PathClient
 
 class ImageProcessingNode(Node):
 
@@ -10,7 +11,7 @@ class ImageProcessingNode(Node):
             self.image_callback,
             10)
         self.pubscription
-        self.srv = self.create_service(CustomService, 'custom_service', self.callback)
+        self.srv = self.create_service(PathClient, 'path_client', self.callback)
 
     def callback(self, request, response):
         # Process the request containing an array of two integers

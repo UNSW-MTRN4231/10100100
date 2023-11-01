@@ -2,9 +2,7 @@ import numpy as np
 from custom_messages.srv import PathClient
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
 from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
 import cv2 as cv
 
 class ImageProcessingNode(Node):

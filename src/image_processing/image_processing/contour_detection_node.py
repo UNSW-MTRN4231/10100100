@@ -1,5 +1,9 @@
 import numpy as np
 from custom_messages.srv import PathClient
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Image
+import cv2 as cv
 
 class ImageProcessingNode(Node):
 
@@ -7,10 +11,10 @@ class ImageProcessingNode(Node):
         super().__init__('contour_detection_node')
         self.subscription = self.create_subscription(
             Image,
-            'image_topic',  # replace the former node name
+            'person_snapshot',  # replace the former node name
             self.image_callback,
             10)
-        self.pubscription
+        self.subscription
         self.srv = self.create_service(PathClient, 'path_client', self.callback)
 
     def callback(self, request, response):
@@ -20,9 +24,11 @@ class ImageProcessingNode(Node):
 
         # Create an example response with an array of points (OpenCV contours)
         contour = np.array([[x, y], [x + 10, y + 10], [x + 20, y + 20]], np.int32)
-        response.points.append(Point(x=x, y=y))
-        response.points.append(Point(x=x+10, y=y+10))
-        response.points.append(Point(x=x+20, y=y+20))
+        # response.points.append(Point(x=x, y=y))
+        # response.points.append(Point(x=x+10, y=y+10))
+        # response.points.append(Point(x=x+20, y=y+20))
+        response.x = contour
+        response.y = contour
         return response
 
     def Tobinray(self, img):

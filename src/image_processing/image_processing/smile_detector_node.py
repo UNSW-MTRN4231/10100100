@@ -8,7 +8,7 @@ import cv2
 class SmileDetectionNode(Node):
     def __init__(self):
         super().__init__('smile_detection_node')
-        self.publisher = self.create_publisher(Image, '/image_raw', 10)
+        self.publisher = self.create_publisher(Image, '/person_snapshot', 10)
         self.subscriber = self.create_subscription(String, '/commands', self.handle_command, 10)
         self.cv_bridge = CvBridge()
         self.face_cascade = cv2.CascadeClassifier('./haarcascade_frontalface_default.xml')

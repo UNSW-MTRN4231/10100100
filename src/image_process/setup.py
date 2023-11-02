@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'image_processing'
+package_name = 'image_process'
 
 setup(
     name=package_name,
@@ -14,15 +14,13 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='mtrn',
-    maintainer_email='z5259702@ad.unsw.edu.au',
+    maintainer_email='pietroluigiruffinomenga@gmail.com',
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'smile_detector_node = image_processing.smile_detector_node:main',
-            'contour_detection_node = image_processing.contour_detection_node:main',
-            'lines = image_processing.lines:main',
+            'smile_detector_node = image_process.smile_detector_node:main',
         ],
     },
 )

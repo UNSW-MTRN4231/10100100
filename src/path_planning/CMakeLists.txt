@@ -31,8 +31,6 @@ ament_target_dependencies(brain_node
   custom_messages
 )
 
-
-
 # Declare the C++ executable
 add_executable(moveit src/moveit.cpp)
 
@@ -47,7 +45,9 @@ ament_target_dependencies(moveit
 )
 
 # Install the executable
-install(TARGETS moveit
+install(TARGETS 
+  moveit
+  brain_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -2,7 +2,11 @@ import numpy as np
 from custom_messages.srv import PathClient
 import rclpy
 from rclpy.node import Node
+
+from std_msgs.msg import String
 from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
+
 import cv2 as cv
 
 class ImageProcessingNode(Node):
@@ -14,6 +18,7 @@ class ImageProcessingNode(Node):
             'person_snapshot',  # replace the former node name
             self.image_callback,
             10)
+
         self.subscription
         self.srv = self.create_service(PathClient, 'path_client', self.callback)
 
@@ -30,6 +35,7 @@ class ImageProcessingNode(Node):
         response.x = contour
         response.y = contour
         return response
+
 
     def Tobinray(self, img):
         imgray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)

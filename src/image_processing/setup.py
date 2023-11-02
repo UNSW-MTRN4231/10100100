@@ -23,6 +23,7 @@ setup(
             'smile_detector_node = image_processing.smile_detector_node:main',
             'contour_detection_node = image_processing.contour_detection_node:main',
             'lines = image_processing.lines:main',
+
         ],
     },
 )

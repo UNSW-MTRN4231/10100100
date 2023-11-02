@@ -46,10 +46,6 @@ ament_target_dependencies(static_camera_transform
   geometry_msgs
 )
 
-
-# Install the Python script
-ament_python_install_package(scripts)
-
 # Install the executables
 install(TARGETS
   paper

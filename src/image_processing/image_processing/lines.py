@@ -1,9 +1,10 @@
+import time
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import TransformStamped, PoseStamped
 from tf2_ros import TransformBroadcaster
 from tf2_ros import TransformListener
-
+from custom_messages.srv import PathClient
 
 import cv2
 import numpy as np
@@ -23,7 +24,7 @@ class lines(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)  # Pass 'self' to the constructor
         self.subscription = self.create_subscription(Bool, '/request', self.topic_callback, 10)
-        self.client = self.create_client(PathClient, 'path_client')
+        self.client = self.create_client(PathClient, 'path_service')
 
 
         while not self.client.wait_for_service(timeout_sec=1.0):
@@ -37,21 +38,16 @@ class lines(Node):
             self.get_logger().error(f"Error looking up transformation")
 
 
-    def topic_callback(self):
+    def topic_callback(self, msg):
+        if (not msg.data): return
+        self.req.colour = [int(1)]
+        self.future = self.client.call_async(self.req)
+        rclpy.spin_until_future_complete(self, self.future)
 
-        self.req.colour = int(1)
-        self.future = self.cli.call_async(self.req)
-        while True:
-            if self.future.done():
-                break
-
-        try:
-            reponse = self.future.result()
-        except:
-            self.get_logger().info(
-                'Service call failed')
-                
-            
+        response = self.future.result()
+        
+               
+        self.get_logger().info(str(response.x))
 
 
 
@@ -158,19 +154,6 @@ class lines(Node):
 
             # Broadcast the dynamic transformation
             self.tf_broadcaster.sendTransform(dynamic_transform)
-
-        
-
-
-
-
-
-from custom_messages.srv import PathClient
-
-
-
-        
-
 
 
 

@@ -9,7 +9,7 @@ from cv_bridge import CvBridge
 
 import cv2 as cv
 
-class ImageProcessingNode(Node):
+class ContourDetectionNode(Node):
 
     def __init__(self):
         super().__init__('contour_detection_node')
@@ -19,21 +19,31 @@ class ImageProcessingNode(Node):
             self.image_callback,
             10)
 
-        self.subscription
-        self.srv = self.create_service(PathClient, 'path_client', self.callback)
+    
+        self.srv = self.create_service(PathClient, 'path_service', self.callback)
 
     def callback(self, request, response):
         # Process the request containing an array of two integers
-        x, y = request.data
-        self.get_logger().info(f"Received request with data: ({x}, {y})")
-
-        # Create an example response with an array of points (OpenCV contours)
-        contour = np.array([[x, y], [x + 10, y + 10], [x + 20, y + 20]], np.int32)
-        # response.points.append(Point(x=x, y=y))
-        # response.points.append(Point(x=x+10, y=y+10))
-        # response.points.append(Point(x=x+20, y=y+20))
-        response.x = contour
-        response.y = contour
+        index = request.colour[0]
+        # Initialize empty lists for x and y values
+        x = []
+        y = []
+        self.get_logger().info("Here ya dog")
+        # Open the text file for reading
+        with open("test.txt", "r") as file:
+            # Read each line in the file
+            for line in file:
+                # Split each line into two values using a space as the delimiter
+                values = line.split()
+                if len(values) == 2:
+                    x_value, y_value = map(int, values)
+                    x.append(x_value)
+                    y.append(y_value)
+        response.x = x
+        response.y = y
+        response.width = 1080
+        response.height = 720
+        self.get_logger().info(str(response))
         return response
 
 
@@ -62,7 +72,10 @@ class ImageProcessingNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    image_processing_node = ImageProcessingNode()
-    rclpy.spin(image_processing_node)
-    image_processing_node.destroy_node()
+    contour_detection_node = ContourDetectionNode()
+    rclpy.spin(contour_detection_node)
     rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()

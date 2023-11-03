@@ -44,10 +44,25 @@ ament_target_dependencies(moveit
   tf2_ros
 )
 
+# Declare the C++ executable
+add_executable(path_planning src/path_planning.cpp)
+
+# Link the executable to the required libraries
+ament_target_dependencies(path_planning
+  rclcpp
+  std_msgs
+  moveit_core
+  moveit_ros_planning
+  moveit_ros_planning_interface
+  tf2_ros
+  custom_messages
+)
+
 # Install the executable
 install(TARGETS 
   moveit
   brain_node
+  path_planning
   DESTINATION lib/${PROJECT_NAME}
 )
 

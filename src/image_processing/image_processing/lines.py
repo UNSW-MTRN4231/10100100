@@ -5,7 +5,8 @@ from geometry_msgs.msg import TransformStamped, PoseStamped
 from tf2_ros import TransformBroadcaster
 from tf2_ros import TransformListener
 from custom_messages.srv import PathClient
-
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 import cv2
 import numpy as np
 
@@ -19,17 +20,20 @@ class lines(Node):
 
     def __init__(self):
         super().__init__('lines')
+        client_cb_group = MutuallyExclusiveCallbackGroup()
+        sub_cb_group = MutuallyExclusiveCallbackGroup()
+        transform_cb_group = MutuallyExclusiveCallbackGroup()
         # self.subscription = self.create_subscription(RobotAction, 'robot_action', self.topic_callback, 10)
-        self.tf_broadcaster_ = TransformBroadcaster(self)  # Pass 'self' to the constructor
+        self.tf_broadcaster_ = TransformBroadcaster(self, callback_group=transform_cb_group)  # Pass 'self' to the constructor
         self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)  # Pass 'self' to the constructor
-        self.subscription = self.create_subscription(Bool, '/request', self.topic_callback, 10)
-        self.client = self.create_client(PathClient, 'path_service')
+        self.tf_listener = TransformListener(self.tf_buffer, self, callback_group=transform_cb_group)  # Pass 'self' to the constructor
 
+        self.client = self.create_client(PathClient, 'path_service', callback_group=client_cb_group)
 
         while not self.client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
         self.req = PathClient.Request()
+        self.subscription = self.create_subscription(Bool, '/request', self.topic_callback, 10, callback_group=sub_cb_group)
 
     def handle_exceptions(self, source_frame, target_frame):
         try:
@@ -37,17 +41,20 @@ class lines(Node):
         except:
             self.get_logger().error(f"Error looking up transformation")
 
-
-    def topic_callback(self, msg):
-        if (not msg.data): return
-        self.req.colour = [int(1)]
+    def handle_service_request(self):
+        self.req.colour = [1]
         self.future = self.client.call_async(self.req)
         rclpy.spin_until_future_complete(self, self.future)
+        self.get_logger().info("recieved response")
 
-        response = self.future.result()
+        return self.future.result()
+
+    def topic_callback(self, msg):
+
+        response = self.handle_service_request()
         
-               
-        self.get_logger().info(str(response.x))
+        self.get_logger().info("recieved response")
+        
 
 
 
@@ -55,23 +62,26 @@ class lines(Node):
         # paper is horezontal, simmilar to table.
         source_frame = "paper_corner_1"
         target_frame = "base_frame"
-        self.handle_exceptions(self, source_frame, target_frame)
+        self.get_logger().info("Finding 1")
+        # self.handle_exceptions(self, source_frame, target_frame)
         corner1 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
         source_frame = "paper_corner_2"
         target_frame = "base_frame"
-        self.handle_exceptions(self, source_frame, target_frame)
+        self.get_logger().info("Finding 2")
+        # self.handle_exceptions(self, source_frame, target_frame)
         corner2 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
         source_frame = "paper_corner_3"
         target_frame = "base_frame"
-        self.handle_exceptions(self, source_frame, target_frame)
+        self.get_logger().info("Finding 3")
+        # self.handle_exceptions(self, source_frame, target_frame)
         corner3 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
         source_frame = "paper_corner_4"    
-
         target_frame = "base_frame"
-        self.handle_exceptions(self, source_frame, target_frame)
+        # self.handle_exceptions(self, source_frame, target_frame)
+        self.get_logger().info("Finding 4")
         corner4 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
 
@@ -125,10 +135,9 @@ class lines(Node):
         ], dtype=np.float32)
         # Find the perspective transformation matrix (homography)
         H, _ = cv2.findHomography(src_points, dst_points)
-
+        self.get_logger().info("Found Homodgraphy")
         # The matrix H now contains the transformation from src_points to dst_points
-        print("Transformation Matrix (Homography):")
-        print(H)
+
 
         # take homography matrix and multiply it by the robot_action points to get global points
         for x, y in zip(self.future.x, self.future.y):
@@ -151,7 +160,7 @@ class lines(Node):
 
             # Set the timestamp
             dynamic_transform.header.stamp = self.get_clock().now().to_msg()
-
+            self.get_logger().info("Broadcasting....")
             # Broadcast the dynamic transformation
             self.tf_broadcaster.sendTransform(dynamic_transform)
 
@@ -160,7 +169,9 @@ class lines(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = lines()
-    rclpy.spin(node)
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
+    executor.spin()
     rclpy.shutdown()
 
 if __name__ == '__main__':

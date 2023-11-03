@@ -1,6 +1,6 @@
-int64[] colour
+int32[] colour
 ---
-int64[] x
-int64[] y
-int64 width
-int64 height
+int32[] x
+int32[] y
+int32 width
+int32 height

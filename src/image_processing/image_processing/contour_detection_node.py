@@ -41,8 +41,8 @@ class ContourDetectionNode(Node):
                     y.append(y_value)
         response.x = x
         response.y = y
-        response.width = 1080
-        response.height = 720
+        response.width = int(1080)
+        response.height = int(720)
         self.get_logger().info(str(response))
         return response
 

@@ -24,16 +24,16 @@ class lines(Node):
         sub_cb_group = MutuallyExclusiveCallbackGroup()
         transform_cb_group = MutuallyExclusiveCallbackGroup()
         # self.subscription = self.create_subscription(RobotAction, 'robot_action', self.topic_callback, 10)
-        self.tf_broadcaster_ = TransformBroadcaster(self, callback_group=transform_cb_group)  # Pass 'self' to the constructor
+        self.tf_broadcaster_ = TransformBroadcaster(self)  # Pass 'self' to the constructor
         self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self, callback_group=transform_cb_group)  # Pass 'self' to the constructor
-
+        self.tf_listener = TransformListener(self.tf_buffer, self)  # Pass 'self' to the constructor
+        self.subscription = self.create_subscription(Bool, '/request', self.topic_callback, 10, callback_group=sub_cb_group)
         self.client = self.create_client(PathClient, 'path_service', callback_group=client_cb_group)
 
         while not self.client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
         self.req = PathClient.Request()
-        self.subscription = self.create_subscription(Bool, '/request', self.topic_callback, 10, callback_group=sub_cb_group)
+        
 
     def handle_exceptions(self, source_frame, target_frame):
         try:
@@ -48,41 +48,41 @@ class lines(Node):
         self.get_logger().info("recieved response")
 
         return self.future.result()
+    
+    # def find_homography_callback(self):
+
 
     def topic_callback(self, msg):
 
         response = self.handle_service_request()
         
         self.get_logger().info("recieved response")
-        
-
-
 
         # assuming aruco markers go 1,2,3,4 clockwise. 1 is futhest away from robot base
         # paper is horezontal, simmilar to table.
         source_frame = "paper_corner_1"
-        target_frame = "base_frame"
+        target_frame = "base_link"
         self.get_logger().info("Finding 1")
         # self.handle_exceptions(self, source_frame, target_frame)
-        corner1 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
+        corner1 = self.tf_buffer.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
-        source_frame = "paper_corner_2"
-        target_frame = "base_frame"
+        source_frame = "paper_corner_1"
+        target_frame = "base_link"
         self.get_logger().info("Finding 2")
         # self.handle_exceptions(self, source_frame, target_frame)
-        corner2 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
+        corner2 = self.tf_buffer.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
-        source_frame = "paper_corner_3"
-        target_frame = "base_frame"
+        source_frame = "paper_corner_2"
+        target_frame = "base_link"
         self.get_logger().info("Finding 3")
         # self.handle_exceptions(self, source_frame, target_frame)
-        corner3 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
+        corner3 = self.tf_buffer.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
-        source_frame = "paper_corner_4"    
-        target_frame = "base_frame"
+        source_frame = "paper_corner_3"    
+        target_frame = "base_link"
         # self.handle_exceptions(self, source_frame, target_frame)
         self.get_logger().info("Finding 4")
-        corner4 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
+        corner4 = self.tf_buffer.lookup_transform(target_frame, source_frame, rclpy.time.Time())
 
 
         # need to check if these produce messurments in the right sign. Could have gotten confuesed with axies orientations.
@@ -92,31 +92,10 @@ class lines(Node):
 
         # will add "crop" from camera length resolution "x" variable.
         # this will stop lines from warping during transfromation by keeping the hight/lenght ratio the same as the paper
-        cam_hight = 720
-        cam_lenght = 1280
-        crop = paper_ratio*cam_lenght/cam_hight
-        cam_lenght = abs(cam_lenght + crop)
-
-        # might need to recenter the robot_action positions
-
-        # get transform 
-            # Define the source points (original points)
-
-            # aruco markers on paper
-        #  1        2
-        #
-        #  4        3
-        #
-
-        # Cammera coordinates
-        #  0,0                  cam_lenght,0
-        #
-        #  0,cam_hight          cam_hight,cam_langth
-
-        #   global axies
-        # x is to the left of robot
-        # y is towards user
-
+        cam_height = response.height
+        cam_length = response.width
+        crop = paper_ratio*cam_length/cam_height
+        cam_length = abs(cam_length + crop)
         
 
 
@@ -129,40 +108,48 @@ class lines(Node):
         # Define the destination points (desired points)
         dst_points = np.array([
             [0, 0],  # New position for Point 1
-            [cam_lenght, 0],  # New position for Point 2
-            [cam_lenght, cam_hight],  # New position for Point 3
-            [0, cam_hight]   # New position for Point 4
+            [cam_length, 0],  # New position for Point 2
+            [cam_length, cam_height],  # New position for Point 3
+            [0, cam_height]   # New position for Point 4
         ], dtype=np.float32)
         # Find the perspective transformation matrix (homography)
         H, _ = cv2.findHomography(src_points, dst_points)
         self.get_logger().info("Found Homodgraphy")
         # The matrix H now contains the transformation from src_points to dst_points
 
-
+        x_path = []
+        y_path = []
+        z_path = []
         # take homography matrix and multiply it by the robot_action points to get global points
         for x, y in zip(self.future.x, self.future.y):
             transformed_point = np.dot(H, [x, y, 1])
 
             # Access the transformed coordinates
             transformed_x, transformed_y, w = transformed_point
-            # Normalize the coordinates (divide by w)
+            # # Normalize the coordinates (divide by w)
             transformed_x /= w
             transformed_y /= w
 
-            # Create a dynamic transformation from "base_frame" to "child_frame"
-            dynamic_transform = TransformStamped()
-            dynamic_transform.header.frame_id = 'base_frame'
-            dynamic_transform.child_frame_id = 'robot_action'
-            dynamic_transform.transform.translation.x = transformed_x  # Update translation
-            dynamic_transform.transform.translation.y = transformed_y
-            dynamic_transform.transform.translation.z = 10.0
-            dynamic_transform.transform.rotation.w = 0.0  # Update rotation
+            # # Create a dynamic transformation from "base_frame" to "child_frame"
+            # dynamic_transform = TransformStamped()
+            # dynamic_transform.header.frame_id = 'base_frame'
+            # dynamic_transform.child_frame_id = 'robot_action'
+            # dynamic_transform.transform.translation.x = transformed_x  # Update translation
+            # dynamic_transform.transform.translation.y = transformed_y
+            # dynamic_transform.transform.translation.z = 10.0
+            # dynamic_transform.transform.rotation.w = 0.0  # Update rotation
 
-            # Set the timestamp
-            dynamic_transform.header.stamp = self.get_clock().now().to_msg()
-            self.get_logger().info("Broadcasting....")
+            # # Set the timestamp
+            # dynamic_transform.header.stamp = self.get_clock().now().to_msg()
+            # self.get_logger().info("Broadcasting....")
             # Broadcast the dynamic transformation
-            self.tf_broadcaster.sendTransform(dynamic_transform)
+
+            x_path.append(transformed_x)
+            y_path.append(transformed_y)
+            z_path.append(w)
+        
+        self.get_logger().info(str(x_path))
+            
 
 
 

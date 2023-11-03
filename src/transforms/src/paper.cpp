@@ -76,19 +76,21 @@ class PaperTFBroadcaster : public rclcpp::Node
           //   transform_msg.transform.translation.z = 0;
           // }
         }
+        tf2::Quaternion q;
+        q.setRPY(0.0, 0.0, 0.0); // -30 degrees pitch in radians
+        transform_msg.transform.rotation.x = q.x();
+        transform_msg.transform.rotation.y = q.y();
+        transform_msg.transform.rotation.z = q.z();
+        transform_msg.transform.rotation.w = q.w();
+
+        // 
+        tf_broadcaster_->sendTransform(transform_msg);
+
       }
       
 
 
-      tf2::Quaternion q;
-      q.setRPY(0.0, 0.0, 0.0); // -30 degrees pitch in radians
-      transform_msg.transform.rotation.x = q.x();
-      transform_msg.transform.rotation.y = q.y();
-      transform_msg.transform.rotation.z = q.z();
-      transform_msg.transform.rotation.w = q.w();
-
-      // 
-       tf_broadcaster_->sendTransform(transform_msg);
+  
     }
 
 

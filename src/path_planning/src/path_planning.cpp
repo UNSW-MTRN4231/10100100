@@ -12,46 +12,33 @@
 class PathPlanningNode : public rclcpp::Node {
 public:
     PathPlanningNode() : Node("path_planning_node") {
-
-        // Subscribe to  /image_obtained
-        //image_obtained_subscriber_ = create_subscription<std_msgs::msg::Bool>("/image_obtained", 10, std::bind(&BrainNode::handle_start_process, this,  std::placeholders::_1));
-
+        
+        end_effector_control = false;
+        
         // Publish to /arduinoCommand
         commands_publisher_ = create_publisher<std_msgs::msg::String>("/arduinoCommand", 10);
 
-        
-        // Publish to /robot_action
-        //robot_action_publisher_ = create_publisher<custom_messages::msg::RobotAction>("/robot_action", 10);
+    }
 
+private:
+
+    void timer_callback()
+    {
+        if (end_effector_control == true) {
+            message.data = "R-7\n";
+        } else {
+            message.data = "R-60\n";
+        }
+        
+        RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
+        commands_publisher_->publish(message);
     }
 
     // control end effector, true -> close, false -> open
-    void end_effector_control(bool command) {
-
-        std_msgs::msg::String message;
-
-        if (command == true) {
-            message.data = "R-7\n";
-
-        } else {
-            message.data = "R-60\n";
-
-        }
-
-        commands_publisher_->publish(message);
-
-    }
-
-
-private:
-    rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr tf2_subscriber_;
+    bool end_effector_control;
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr commands_publisher_;
-    rclcpp::Client<custom_messages::srv::PathClient>::SharedPtr path_client_;
 
-    std::vector<int> colours;
-    std::vector<int> colours_processed;
-    bool process_started;
 };
 
 int main(int argc, char *argv[]) {

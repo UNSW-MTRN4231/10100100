@@ -60,30 +60,33 @@ class lines(Node):
 
         # assuming aruco markers go 1,2,3,4 clockwise. 1 is futhest away from robot base
         # paper is horezontal, simmilar to table.
-        source_frame = "paper_corner_1"
+        source_frame = "paper_corner_0"
         target_frame = "base_link"
         self.get_logger().info("Finding 1")
         # self.handle_exceptions(self, source_frame, target_frame)
         corner1 = self.tf_buffer.lookup_transform(target_frame, source_frame, rclpy.time.Time())
+        self.get_logger().info(str(corner1))
 
         source_frame = "paper_corner_1"
         target_frame = "base_link"
         self.get_logger().info("Finding 2")
         # self.handle_exceptions(self, source_frame, target_frame)
         corner2 = self.tf_buffer.lookup_transform(target_frame, source_frame, rclpy.time.Time())
+        self.get_logger().info(str(corner2))
 
         source_frame = "paper_corner_2"
         target_frame = "base_link"
         self.get_logger().info("Finding 3")
         # self.handle_exceptions(self, source_frame, target_frame)
         corner3 = self.tf_buffer.lookup_transform(target_frame, source_frame, rclpy.time.Time())
+        self.get_logger().info(str(corner3))
 
         source_frame = "paper_corner_3"    
         target_frame = "base_link"
         # self.handle_exceptions(self, source_frame, target_frame)
         self.get_logger().info("Finding 4")
         corner4 = self.tf_buffer.lookup_transform(target_frame, source_frame, rclpy.time.Time())
-
+        self.get_logger().info(str(corner4))
 
         # need to check if these produce messurments in the right sign. Could have gotten confuesed with axies orientations.
         paper_hight = corner1.transform.translation.x - corner3.transform.translation.x
@@ -121,7 +124,7 @@ class lines(Node):
         y_path = []
         z_path = []
         # take homography matrix and multiply it by the robot_action points to get global points
-        for x, y in zip(self.future.x, self.future.y):
+        for x, y in zip(response.x, response.y):
             transformed_point = np.dot(H, [x, y, 1])
 
             # Access the transformed coordinates
@@ -143,7 +146,7 @@ class lines(Node):
             # dynamic_transform.header.stamp = self.get_clock().now().to_msg()
             # self.get_logger().info("Broadcasting....")
             # Broadcast the dynamic transformation
-
+            self.get_logger().info("appending to path")
             x_path.append(transformed_x)
             y_path.append(transformed_y)
             z_path.append(w)

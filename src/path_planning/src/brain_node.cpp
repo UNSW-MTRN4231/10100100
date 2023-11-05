@@ -16,7 +16,7 @@ class BrainNode : public rclcpp::Node {
 public:
     BrainNode() : Node("brain_node") {
         auto sub_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-        auto client_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+        auto client_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
         rclcpp::SubscriptionOptions options;
         options.callback_group = sub_cb_group;
         // Subscribe to /pen_colours
@@ -84,26 +84,30 @@ public:
     void handle_start_process(const std_msgs::msg::Bool::SharedPtr msg) {
         if (msg->data == true && process_started == false) {
             process_started = true;
-            handle_request_path();
+            handle_make_request(1);
+        }
+    }
+
+    void handle_make_request(int index) {
+        auto request = std::make_shared<custom_messages::srv::PathClient::Request>();
+        request->colour = {index}; // Set the request parameters
+        response_received = false;
+        // Send the request to the service
+        auto result_future = path_client_->async_send_request(request, std::bind(&BrainNode::handle_service_response, this, std::placeholders::_1));
+        while (rclcpp::ok() && !response_received) {
+            usleep(1000);
         }
     }
 
 
-    void handle_request_path() {
-        // Create and populate the request
-        auto request = std::make_shared<custom_messages::srv::PathClient::Request>();
-        request->colour = {1}; // Array of two integers
-
-        // Send the request to the service
-        auto result_future = path_client_->async_send_request(request);
-        std::future_status status = result_future.wait_for(3s);
-        if (status == std::future_status::ready) {
+    void handle_service_response(rclcpp::Client<custom_messages::srv::PathClient>::SharedFuture result_future) {
+        response_received = true;
+        if (result_future.get()) {
             RCLCPP_INFO(this->get_logger(), "Received response");
-            // process_response(result_future.get());
+            process_response();
         } else {
             RCLCPP_ERROR(this->get_logger(), "Failed to receive response.");
         }
-
     }
 
     void process_response(){}
@@ -120,11 +124,15 @@ private:
     std::vector<int> colours;
     std::vector<int> colours_processed;
     bool process_started;
+    bool response_received;
 };
 
 int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<BrainNode>());
+    auto node = std::make_shared<BrainNode>();
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(node);
+    executor.spin();
     rclcpp::shutdown();
     return 0;
 }

@@ -39,7 +39,6 @@ class ContourDetectionNode(Node):
         except:
             self.get_logger().info("Can't find canvas")
             return
-        self.get_logger().info(str(corner1))
 
         source_frame = "paper_corner_1"
         target_frame = "base_link"
@@ -48,7 +47,6 @@ class ContourDetectionNode(Node):
         except:
             self.get_logger().info("Can't find canvas")
             return
-        self.get_logger().info(str(corner2))
 
         source_frame = "paper_corner_2"
         target_frame = "base_link"
@@ -57,7 +55,6 @@ class ContourDetectionNode(Node):
         except:
             self.get_logger().info("Can't find canvas")
             return
-        self.get_logger().info(str(corner3))
 
         source_frame = "paper_corner_3"    
         target_frame = "base_link"
@@ -66,7 +63,7 @@ class ContourDetectionNode(Node):
         except:
             self.get_logger().info("Can't find canvas")
             return
-        self.get_logger().info(str(corner4))
+
 
         # need to check if these produce messurments in the right sign. Could have gotten confuesed with axies orientations.
         paper_hight = corner1.transform.translation.x - corner3.transform.translation.x
@@ -80,8 +77,6 @@ class ContourDetectionNode(Node):
         crop = paper_ratio*cam_length/cam_height
         cam_length = abs(cam_length + crop)
         
-
-
         src_points = np.array([
             [corner1.transform.translation.x, corner1.transform.translation.y],  # Point 1
             [corner2.transform.translation.x, corner2.transform.translation.y],  # Point 2
@@ -97,9 +92,9 @@ class ContourDetectionNode(Node):
         ], dtype=np.float32)
         # Find the perspective transformation matrix (homography)
         self.H, _ = cv.findHomography(src_points, dst_points)
-        self.get_logger().info("Found Homodgraphy")
 
     def callback(self, request, response):
+        self.get_logger().info("Recieved Request")
         # Process the request containing an array of two integers
         index = request.colour[0]
         # Initialize empty lists for x and y values
@@ -125,6 +120,7 @@ class ContourDetectionNode(Node):
 
         response.x = x
         response.y = y
+        self.get_logger().info("Returning response")
         return response
 
 

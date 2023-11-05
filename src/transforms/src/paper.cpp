@@ -49,10 +49,10 @@ class PaperTFBroadcaster : public rclcpp::Node
           transform_msg.header.frame_id = "camera_frame";
           transform_msg.child_frame_id = "paper_corner_" + std::to_string(msg->marker_ids[i]);
           if (!msg->poses.empty()) {
-            std::cout << "X: " << msg->marker_ids[i] << std::endl;
-             std::cout << "X: " << msg->poses[i].position.x << std::endl;  
-             std::cout << "Y: " << msg->poses[i].position.y << std::endl;
-             std::cout << "Z: " << msg->poses[i].position.z << std::endl;
+            // std::cout << "X: " << msg->marker_ids[i] << std::endl;
+            //  std::cout << "X: " << msg->poses[i].position.x << std::endl;  
+            //  std::cout << "Y: " << msg->poses[i].position.y << std::endl;
+            //  std::cout << "Z: " << msg->poses[i].position.z << std::endl;
             transform_msg.transform.translation.x = msg->poses[i].position.x;
             transform_msg.transform.translation.y = msg->poses[i].position.y;
             transform_msg.transform.translation.z = msg->poses[i].position.z;

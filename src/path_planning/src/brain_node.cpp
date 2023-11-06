@@ -8,34 +8,27 @@
 #include "std_msgs/msg/int32_multi_array.hpp"
 #include "geometry_msgs/msg/point32.hpp"
 #include <vector>
+#include <chrono>
+
+using namespace std::chrono_literals;
 
 class BrainNode : public rclcpp::Node {
 public:
-    BrainNode() : Node("my_node") {
-        // Subscribe to /tf2
-        // tf2_subscriber_ = create_subscription<tf2_msgs::msg::TFMessage>(
-        //     "/tf2", 10,
-        //     [this](const tf2_msgs::msg::TFMessage::SharedPtr msg) {
-                
-        //     });
-
+    BrainNode() : Node("brain_node") {
+        auto sub_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+        auto client_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+        rclcpp::SubscriptionOptions options;
+        options.callback_group = sub_cb_group;
         // Subscribe to /pen_colours
-        pen_colours_subscriber_ = create_subscription<std_msgs::msg::Int32MultiArray>("/pen_colours", 10, std::bind(&BrainNode::handle_pen_colours, this,  std::placeholders::_1));
+        pen_colours_subscriber_ = create_subscription<std_msgs::msg::Int32MultiArray>("/pen_colours", 10, std::bind(&BrainNode::handle_pen_colours, this,  std::placeholders::_1), options);
 
         // Subscribe to  /image_obtained
-        image_obtained_subscriber_ = create_subscription<std_msgs::msg::Bool>("/image_obtained", 10, std::bind(&BrainNode::handle_start_process, this,  std::placeholders::_1));
-
-        // Subscribe to /path
-        // path_subscriber_ = create_subscription<geometry_msgs::msg::Point32>(
-        //     "/path", 10,
-        //     [this](const geometry_msgs::msg::Point32::SharedPtr msg) {
-        //         // Process /path data here
-        //     });
+        image_obtained_subscriber_ = create_subscription<std_msgs::msg::Bool>("/image_obtained", 10, std::bind(&BrainNode::handle_start_process, this,  std::placeholders::_1), options);
 
         // Publish to /commands
-        commands_publisher_ = create_publisher<std_msgs::msg::String>("/commands", 10);
+        // commands_publisher_ = create_publisher<std_msgs::msg::String>("/commands", 10);
 
-        path_client_ = this->create_client<custom_messages::srv::PathClient>("path_client");
+        path_client_ = this->create_client<custom_messages::srv::PathClient>("path_service", rmw_qos_profile_services_default, client_cb_group);
 
         while (!path_client_->wait_for_service(std::chrono::seconds(1))) {
             if (!rclcpp::ok()) {
@@ -91,25 +84,27 @@ public:
     void handle_start_process(const std_msgs::msg::Bool::SharedPtr msg) {
         if (msg->data == true && process_started == false) {
             process_started = true;
-            handle_request_path();
+            handle_make_request(1);
         }
     }
 
-    void handle_request_path() {
-        // Create and populate the request
+    void handle_make_request(int index) {
         auto request = std::make_shared<custom_messages::srv::PathClient::Request>();
-        request->colour = {colours.size(), colours_processed.size()}; // Array of two integers
-
+        request->colour = {index}; // Set the request parameters
+        response_received = false;
         // Send the request to the service
-        auto result_future = path_client_->async_send_request(request);
-        rclcpp::spin_until_future_complete(this->get_node_base_interface(), result_future);
+        auto result_future = path_client_->async_send_request(request, std::bind(&BrainNode::handle_service_response, this, std::placeholders::_1));
+    }
+
+
+    void handle_service_response(rclcpp::Client<custom_messages::srv::PathClient>::SharedFuture result_future) {
+        response_received = true;
         if (result_future.get()) {
             RCLCPP_INFO(this->get_logger(), "Received response");
-            // process_response(result_future.get());
+            process_response();
         } else {
             RCLCPP_ERROR(this->get_logger(), "Failed to receive response.");
         }
-
     }
 
     void process_response(){}
@@ -126,11 +121,15 @@ private:
     std::vector<int> colours;
     std::vector<int> colours_processed;
     bool process_started;
+    bool response_received;
 };
 
 int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<BrainNode>());
+    auto node = std::make_shared<BrainNode>();
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(node);
+    executor.spin();
     rclcpp::shutdown();
     return 0;
 }

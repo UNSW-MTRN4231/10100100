@@ -94,9 +94,6 @@ public:
         response_received = false;
         // Send the request to the service
         auto result_future = path_client_->async_send_request(request, std::bind(&BrainNode::handle_service_response, this, std::placeholders::_1));
-        while (rclcpp::ok() && !response_received) {
-            usleep(1000);
-        }
     }
 
 

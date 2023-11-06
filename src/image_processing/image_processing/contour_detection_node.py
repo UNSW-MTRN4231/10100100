@@ -100,6 +100,7 @@ class ContourDetectionNode(Node):
         # Initialize empty lists for x and y values
         x = []
         y = []
+        z = []
         # Open the text file for reading
         with open("test.txt", "r") as file:
             # Read each line in the file
@@ -107,7 +108,7 @@ class ContourDetectionNode(Node):
                 # Split each line into two values using a space as the delimiter
                 values = line.split()
                 if len(values) == 2:
-                    x_value, y_value = map(int, values)
+                    x_value, y_value = map(float, values)
                     transformed_point = np.dot(self.H, [x_value, y_value, 1])
 
                     # Access the transformed coordinates
@@ -115,8 +116,8 @@ class ContourDetectionNode(Node):
                     # # Normalize the coordinates (divide by w)
                     transformed_x /= w
                     transformed_y /= w
-                    x.append(int(transformed_x))
-                    y.append(int(transformed_y))
+                    x.append(float(transformed_x))
+                    y.append(float(transformed_y))
 
         response.x = x
         response.y = y

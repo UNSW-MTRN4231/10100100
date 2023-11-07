@@ -12,7 +12,15 @@
   <depend>std_msgs</depend>
   <depend>tf2_msgs</depend>
 
-  <build_depend>custom_messages</build_depend>
+  <depend>custom_messages</depend>
+
+  <depend>moveit_ros_planning_interface</depend>
+  <depend>rclcpp</depend>
+  <depend>ros_ur_driver</depend>
+  <depend>trajectory_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

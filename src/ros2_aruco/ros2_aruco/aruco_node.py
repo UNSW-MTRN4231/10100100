@@ -57,7 +57,7 @@ class ArucoNode(rclpy.node.Node):
 
         self.declare_parameter(
             name="aruco_dictionary_id",
-            value="DICT_5X5_250",
+            value="DICT_4X4_250",
             descriptor=ParameterDescriptor(
                 type=ParameterType.PARAMETER_STRING,
                 description="Dictionary that was used to generate markers.",
@@ -157,7 +157,6 @@ class ArucoNode(rclpy.node.Node):
         self.destroy_subscription(self.info_sub)
 
     def image_callback(self, img_msg):
-        
         if self.info_msg is None:
             self.get_logger().warn("No camera info has been received!")
             return
@@ -178,6 +177,7 @@ class ArucoNode(rclpy.node.Node):
         corners, marker_ids, rejected = cv2.aruco.detectMarkers(
             cv_image, self.aruco_dictionary, parameters=self.aruco_parameters
         )
+
         if marker_ids is not None:
             if cv2.__version__ > "4.0.0":
                 rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(

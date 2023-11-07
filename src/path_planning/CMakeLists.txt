@@ -32,22 +32,44 @@ ament_target_dependencies(brain_node
 )
 
 # Declare the C++ executable
-add_executable(moveit src/moveit.cpp)
+add_executable(move_command src/move_command.cpp)
+
+target_include_directories(move_command PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(move_command PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+
 
 # Link the executable to the required libraries
-ament_target_dependencies(moveit
+ament_target_dependencies(move_command
   rclcpp
   std_msgs
   moveit_core
   moveit_ros_planning
   moveit_ros_planning_interface
   tf2_ros
+  custom_messages
+)
+
+# Declare the C++ executable
+add_executable(path_planning src/path_planning.cpp)
+
+# Link the executable to the required libraries
+ament_target_dependencies(path_planning
+  rclcpp
+  std_msgs
+  moveit_core
+  moveit_ros_planning
+  moveit_ros_planning_interface
+  tf2_ros
+  custom_messages
 )
 
 # Install the executable
 install(TARGETS 
-  moveit
+  move_command
   brain_node
+  path_planning
   DESTINATION lib/${PROJECT_NAME}
 )
 

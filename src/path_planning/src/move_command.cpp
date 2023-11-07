@@ -10,6 +10,7 @@
 #include "tf2_ros/buffer.h"
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
+#include "custom_messages/msg/robot_action.hpp"
 
 //Function to generate a collision object
 auto generateCollisionObject(float sx,float sy, float sz, float x, float y, float z, std::string frame_id, std::string id) {
@@ -52,18 +53,21 @@ auto generatePoseMsg(float x,float y, float z,float qx,float qy,float qz,float q
 
 using std::placeholders::_1;
 
-class move_to_marker : public rclcpp::Node
+class move_command : public rclcpp::Node
 {
   public:
-    move_to_marker() : Node("move_to_marker")
+    move_command() : Node("move_command")
     {
 
       // Initalise the transformation listener
-      tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
-      tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+      // tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+      // tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
       // Look up the transformation ever 200 milliseconds
-      timer_ = this->create_wall_timer( std::chrono::milliseconds(200), std::bind(&move_to_marker::tfCallback, this));
+      // timer_ = this->create_wall_timer( std::chrono::milliseconds(200), std::bind(&move_command::tfCallback, this));
+      
+      // create subscription
+      subscriber_ = this->create_subscription<custom_messages::msg::RobotAction>("/comands", 10, std::bind(&move_command::robot_action_callback, this,  std::placeholders::_1));
 
 
 
@@ -85,7 +89,7 @@ class move_to_marker : public rclcpp::Node
 
     }
 
-    auto generatePoseMsg(double x,double y, double z,float qx,float qy,float qz,float qw) {
+    auto generatePoseMsg(float x, float y, float  z,float qx,float qy,float qz,float qw) {
       geometry_msgs::msg::Pose msg;
       msg.orientation.x = qx;
       msg.orientation.y = qy;
@@ -99,58 +103,54 @@ class move_to_marker : public rclcpp::Node
 
   private:
 
-    void tfCallback()
+    void robot_action_callback(const custom_messages::msg::RobotAction msg)
     {
       
-      try {
-          t = tf_buffer_->lookupTransform(
-            toFrameRel, fromFrameRel,
-            tf2::TimePointZero);
-        } catch (const tf2::TransformException & ex) {
-          RCLCPP_INFO(
-            this->get_logger(), "Could not transform %s to %s: %s",
-            toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
-          return;
-        }
-
-      // Check if the transformation is between "ball_frame" and "base_link" 
-      std::cout << "updating tf" << std::endl;
       
-      // std::cout << msg.data << std::endl;
-      // if (msg.data == "space") {
-      //   std::cout << "moving to point" << std::endl;
-      //   auto msg = generatePoseMsg(t.transform.translation.x, t.transform.translation.y, t.transform.translation.z, 0.0, 0.0, 0.0, 0.0);
-      //   moveit::planning_interface::MoveGroupInterface::Plan planMessage;
+      for(double i = 0; i < msg.x.size(); i++) {
+        // waiting period
+        int scaler = 1;
+        float distance = sqrt((msg.x[i] - msg.x[prev]) * (msg.x[i] - msg.x[prev]) + (msg.y[i] - msg.y[prev]) * (msg.y[i] - msg.y[prev]));
+        prev = i;   //set the prev current itorator
+        std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(scaler * distance))); 
 
-      //   move_group_interface->setPoseTarget(msg);
-      //   auto success = static_cast<bool>(move_group_interface->plan(planMessage));
+        std::cout << "moving to point" << std::endl;
+        float z = 200;
+        auto poseMsg = generatePoseMsg(msg.x[i], msg.y[i], z, 0.0, 0.0, 0.0, 0.0);
+        moveit::planning_interface::MoveGroupInterface::Plan planMessage;
 
-      //   //Execute movement to point 1
-      //   if (success) {
-      //     move_group_interface->execute(planMessage);
-      //   } else {
-      //     std::cout << "Planning failed!" << std::endl;
-      //   }
-      //   std::cout << "here" << std::endl;
-      // }
+        move_group_interface->setPoseTarget(poseMsg);
+        auto success = static_cast<bool>(move_group_interface->plan(planMessage));
+
+        //Execute movement to point 1
+        if (success) {
+          move_group_interface->execute(planMessage);
+        } else {
+          std::cout << "Planning failed!" << std::endl;
+        }
+        std::cout << "here" << std::endl;
+      }
+      
     }
 
 
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
-  rclcpp::TimerBase::SharedPtr timer_;
-  std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
-  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  // rclcpp::TimerBase::SharedPtr timer_;
+  // std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+  // std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface;
-  std::string fromFrameRel = "base_link";
-  std::string toFrameRel = "robot_action";
+  rclcpp::Subscription<custom_messages::msg::RobotAction>::SharedPtr subscriber_;
+  // std::string fromFrameRel = "base_link";
+  // std::string toFrameRel = "robot_action";
    geometry_msgs::msg::TransformStamped t;
+   int prev = 0;      // used as arrray index in topic call back
 };
 
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<move_to_marker>());
+  rclcpp::spin(std::make_shared<move_command>());
   rclcpp::shutdown();
   return 0;
 }

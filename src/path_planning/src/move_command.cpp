@@ -68,7 +68,9 @@ class move_command : public rclcpp::Node
       
       // create subscription
       subscriber_ = this->create_subscription<custom_messages::msg::RobotAction>("/robot_action", 10, std::bind(&move_command::robot_action_callback, this,  std::placeholders::_1));
-
+      // Initalise the transformation listener
+      tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+      tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
 
       // Generate the movegroup interface
@@ -110,6 +112,28 @@ class move_command : public rclcpp::Node
       tf2::Quaternion q;
       q.setRPY(M_PI, 0.0, 0.0);
       usleep(1000000);
+
+      // Pick up the pen
+      try {
+        t = tf_buffer_->lookupTransform(
+          toFrameRel, fromFrameRel,
+          tf2::TimePointZero);
+      } catch (const tf2::TransformException & ex) {
+        RCLCPP_INFO(
+          this->get_logger(), "Could not transform %s to %s: %s",
+          toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
+        return;
+      }
+      geometry_msgs::msg::Quaternion rotation = t.transform.rotation;
+      float yaw = tf2::getYaw(rotation);
+      z = 0.3;
+      float x = (0.08 + offset*penIndex) * cos(yaw);
+      float y = (0.08 + offset*penIndex) * sin(yaw);
+
+      auto poseMsg = generatePoseMsg(t.transform.translation.x + x, t.transform.translation.y + y, z, q.x(), q.y(), q.z(), q.w());
+      waypoints.push_back(poseMsg);
+
+
       for(double i = 0; i < msg.x.size(); i++) {
         // waiting period
         // int scaler = 1;
@@ -118,7 +142,7 @@ class move_command : public rclcpp::Node
         // std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(scaler * distance))); 
 
         
-        float z = 0.3;
+        z = 0.3;
         auto poseMsg = generatePoseMsg(msg.x[i], msg.y[i], z, q.x(), q.y(), q.z(), q.w());
         
         waypoints.push_back(poseMsg);
@@ -142,15 +166,22 @@ class move_command : public rclcpp::Node
 
 
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
-  // rclcpp::TimerBase::SharedPtr timer_;
-  // std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
-  // std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  rclcpp::TimerBase::SharedPtr timer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface;
   rclcpp::Subscription<custom_messages::msg::RobotAction>::SharedPtr subscriber_;
-  // std::string fromFrameRel = "base_link";
-  // std::string toFrameRel = "robot_action";
-   geometry_msgs::msg::TransformStamped t;
-   int prev = 0;      // used as arrray index in topic call back
+  std::string fromFrameRel = "base_link";
+  std::string toFrameRel = "pen_rack_4";
+  geometry_msgs::msg::TransformStamped t;
+  int prev = 0;      // used as arrray index in topic call back
+  int penIndex = 0;
+  geometry_msgs::msg::TransformStamped t;
+  float z = 0.3;
+  float x_rack_offset = 0.06;
+  float y_rack_offset = 0.0;
+
+
 };
 
 

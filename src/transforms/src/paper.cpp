@@ -49,39 +49,34 @@ class PaperTFBroadcaster : public rclcpp::Node
           transform_msg.header.frame_id = "camera_frame";
           transform_msg.child_frame_id = "paper_corner_" + std::to_string(msg->marker_ids[i]);
           if (!msg->poses.empty()) {
-            // std::cout << "X: " << msg->marker_ids[i] << std::endl;
-            //  std::cout << "X: " << msg->poses[i].position.x << std::endl;  
-            //  std::cout << "Y: " << msg->poses[i].position.y << std::endl;
-            //  std::cout << "Z: " << msg->poses[i].position.z << std::endl;
+
             transform_msg.transform.translation.x = msg->poses[i].position.x;
             transform_msg.transform.translation.y = msg->poses[i].position.y;
             transform_msg.transform.translation.z = msg->poses[i].position.z;
+
+            tf2::Quaternion q;
+            q.setRPY(0.0, 0.0, 0.0); // -30 degrees pitch in radians
+            transform_msg.transform.rotation.x = q.x();
+            transform_msg.transform.rotation.y = q.y();
+            transform_msg.transform.rotation.z = q.z();
+            transform_msg.transform.rotation.w = q.w();
           } 
-          // else {
-          //   transform_msg.transform.translation.x = 0;
-          //   transform_msg.transform.translation.y = 0;
-          //   transform_msg.transform.translation.z = 0;
-          // }
+
         } else if (msg->marker_ids[i] <= 5){
           transform_msg.header.frame_id = "camera_frame";
-          transform_msg.child_frame_id = "marker_side_" + std::to_string(msg->marker_ids[i]);
+          transform_msg.child_frame_id = "pen_rack_" + std::to_string(msg->marker_ids[i]);
           if (!msg->poses.empty()) {
             transform_msg.transform.translation.x = msg->poses[i].position.x;
             transform_msg.transform.translation.y = msg->poses[i].position.y;
             transform_msg.transform.translation.z = msg->poses[i].position.z;
+
+            transform_msg.transform.rotation.x = msg->poses[i].orientation.x;
+            transform_msg.transform.rotation.y = msg->poses[i].orientation.y;
+            transform_msg.transform.rotation.z = msg->poses[i].orientation.z;
+            transform_msg.transform.rotation.w = msg->poses[i].orientation.w;
           } 
-          // else {
-          //   transform_msg.transform.translation.x = 0;
-          //   transform_msg.transform.translation.y = 0;
-          //   transform_msg.transform.translation.z = 0;
-          // }
         }
-        tf2::Quaternion q;
-        q.setRPY(0.0, 0.0, 0.0); // -30 degrees pitch in radians
-        transform_msg.transform.rotation.x = q.x();
-        transform_msg.transform.rotation.y = q.y();
-        transform_msg.transform.rotation.z = q.z();
-        transform_msg.transform.rotation.w = q.w();
+
 
         // 
         tf_broadcaster_->sendTransform(transform_msg);

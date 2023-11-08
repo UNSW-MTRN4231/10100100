@@ -24,7 +24,8 @@ setup(
             'contour_detection_node = image_processing.contour_detection_node:main',
             'lines = image_processing.lines:main',
             'test_img_publisher = image_processing.test_img_publisher:main',
-            'dummy_camera_info = image_processing.dummy_camera_info:main'
+            'dummy_camera_info = image_processing.dummy_camera_info:main',
+            'test_pub_robot_action = image_processing.test_pub_robot_action:main'
         ],
     },
 )

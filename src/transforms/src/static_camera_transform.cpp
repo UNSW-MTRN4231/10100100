@@ -16,12 +16,12 @@ public:
     transformStamped_.header.frame_id = "base_link";
     transformStamped_.child_frame_id = "camera_frame";
 
-    transformStamped_.transform.translation.x = 0.075;
-    transformStamped_.transform.translation.y = 1.0;
-    transformStamped_.transform.translation.z = 1.0;
+    transformStamped_.transform.translation.x = 1.27;
+    transformStamped_.transform.translation.y = 0.075;
+    transformStamped_.transform.translation.z = 0.48;
 
     tf2::Quaternion q;
-    q.setRPY(4.5*M_PI / 6.0, 0.0, 0.0); // -30 degrees pitch in radians
+    q.setRPY(0.305*M_PI  + M_PI, 0.0, M_PI/2); // -30 degrees pitch in radians
     transformStamped_.transform.rotation.x = q.x();
     transformStamped_.transform.rotation.y = q.y();
     transformStamped_.transform.rotation.z = q.z();

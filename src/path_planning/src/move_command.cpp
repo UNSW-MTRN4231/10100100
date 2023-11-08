@@ -67,7 +67,7 @@ class move_command : public rclcpp::Node
       // timer_ = this->create_wall_timer( std::chrono::milliseconds(200), std::bind(&move_command::tfCallback, this));
       
       // create subscription
-      subscriber_ = this->create_subscription<custom_messages::msg::RobotAction>("/comands", 10, std::bind(&move_command::robot_action_callback, this,  std::placeholders::_1));
+      subscriber_ = this->create_subscription<custom_messages::msg::RobotAction>("/robot_action", 10, std::bind(&move_command::robot_action_callback, this,  std::placeholders::_1));
 
 
 
@@ -105,32 +105,39 @@ class move_command : public rclcpp::Node
 
     void robot_action_callback(const custom_messages::msg::RobotAction msg)
     {
-      
-      
+      moveit_msgs::msg::RobotTrajectory trajectory;
+      std::vector<geometry_msgs::msg::Pose> waypoints;
+      tf2::Quaternion q;
+      q.setRPY(M_PI, 0.0, 0.0);
+      usleep(1000000);
       for(double i = 0; i < msg.x.size(); i++) {
         // waiting period
-        int scaler = 1;
-        float distance = sqrt((msg.x[i] - msg.x[prev]) * (msg.x[i] - msg.x[prev]) + (msg.y[i] - msg.y[prev]) * (msg.y[i] - msg.y[prev]));
-        prev = i;   //set the prev current itorator
-        std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(scaler * distance))); 
+        // int scaler = 1;
+        // float distance = sqrt((msg.x[i] - msg.x[prev]) * (msg.x[i] - msg.x[prev]) + (msg.y[i] - msg.y[prev]) * (msg.y[i] - msg.y[prev]));
+        // prev = i;   //set the prev current itorator
+        // std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(scaler * distance))); 
 
-        std::cout << "moving to point" << std::endl;
-        float z = 200;
-        auto poseMsg = generatePoseMsg(msg.x[i], msg.y[i], z, 0.0, 0.0, 0.0, 0.0);
-        moveit::planning_interface::MoveGroupInterface::Plan planMessage;
+        
+        float z = 0.3;
+        auto poseMsg = generatePoseMsg(msg.x[i], msg.y[i], z, q.x(), q.y(), q.z(), q.w());
+        
+        waypoints.push_back(poseMsg);
+        
+        // auto success = static_cast<bool>(move_group_interface->plan(planMessage));
 
-        move_group_interface->setPoseTarget(poseMsg);
-        auto success = static_cast<bool>(move_group_interface->plan(planMessage));
-
-        //Execute movement to point 1
-        if (success) {
-          move_group_interface->execute(planMessage);
-        } else {
-          std::cout << "Planning failed!" << std::endl;
-        }
+        // Execute movement to point 1
+        // if (success) {
+        
+        // } else {
+        //   std::cout << "Planning failed!" << std::endl;
+        // }
         std::cout << "here" << std::endl;
       }
-      
+      std::cout << "moving to point" << std::endl;
+      move_group_interface->setMaxVelocityScalingFactor(0.3);
+      move_group_interface->setMaxAccelerationScalingFactor(0.3);
+      move_group_interface->computeCartesianPath(waypoints, 0.1, 0.0, trajectory);
+      move_group_interface->execute(trajectory);
     }
 
 

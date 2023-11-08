@@ -74,24 +74,27 @@ class ContourDetectionNode(Node):
         # this will stop lines from warping during transfromation by keeping the hight/lenght ratio the same as the paper
         cam_height = 480
         cam_length = 640
-        crop = paper_ratio*cam_length/cam_height
-        cam_length = abs(cam_length + crop)
         
-        src_points = np.array([
+        dst_points = np.array([
             [corner1.transform.translation.x, corner1.transform.translation.y],  # Point 1
             [corner2.transform.translation.x, corner2.transform.translation.y],  # Point 2
             [corner3.transform.translation.x, corner3.transform.translation.y],  # Point 3
             [corner4.transform.translation.x, corner4.transform.translation.y]   # Point 4
         ], dtype=np.float32)
         # Define the destination points (desired points)
-        dst_points = np.array([
+        src_points = np.array([
             [0, 0],  # New position for Point 1
             [cam_length, 0],  # New position for Point 2
             [cam_length, cam_height],  # New position for Point 3
             [0, cam_height]   # New position for Point 4
         ], dtype=np.float32)
+
+        self.get_logger().info(str(src_points))
+        self.get_logger().info(str(dst_points))
+        
         # Find the perspective transformation matrix (homography)
         self.H, _ = cv.findHomography(src_points, dst_points)
+        self.get_logger().info(str(self.H))
 
     def callback(self, request, response):
         self.get_logger().info("Recieved Request")

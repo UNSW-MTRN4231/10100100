@@ -30,26 +30,18 @@ class lines(Node):
         self.subscription = self.create_subscription(Bool, '/image_obtained', self.send_path_to_moveit, 10, callback_group=sub_cb_group)
         self.client = self.create_client(PathClient, 'path_service', callback_group=client_cb_group)
         self.publisher = self.create_publisher(RobotAction, '/robot_action', 10, callback_group=pub_cb_group)
-
+        self.counter = 0
         while not self.client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
         self.req = PathClient.Request()
         
 
-    def handle_exceptions(self, source_frame, target_frame):
-        try:
-            corner1 = self.tf_listener.lookup_transform(target_frame, source_frame, rclpy.time.Time())
-        except:
-            self.get_logger().error(f"Error looking up transformation")
-
     def handle_service_request(self):
-        self.req.colour = [1]
+        self.req.colour = [self.counter]
         self.future = self.client.call_async(self.req)
         rclpy.spin_until_future_complete(self, self.future)
-
+        self.contour += 2
         return self.future.result()
-    
-    # def find_homography_callback(self):
 
     def send_path_to_moveit(self, msg):
 
@@ -66,10 +58,7 @@ class lines(Node):
         self.get_logger().info("about to send")
         self.publisher.publish(send_msg)
         self.get_logger().info("sending path")
-        
-
-            
-
+        return
 
 
 def main(args=None):

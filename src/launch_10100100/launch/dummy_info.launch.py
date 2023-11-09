@@ -7,7 +7,7 @@ def generate_launch_description():
         # Launch the 'dummy_camera_info' node
         Node(
             package="image_processing",
-            executable="dummy_camera_info_node",
+            executable="dummy_camera_info",
             name="dummy_camera_info",
             output="screen",
             # Add any node-specific parameters here
@@ -16,7 +16,7 @@ def generate_launch_description():
         # Launch the 'test_img_publisher' node
         Node(
             package="image_processing",
-            executable="test_img_publisher_node",
+            executable="test_img_publisher",
             name="test_img_publisher",
             output="screen",
             # Add any node-specific parameters here

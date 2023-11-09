@@ -10,6 +10,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 import cv2 as cv
+from sklearn.cluster import KMeans
 
 class ContourDetectionNode(Node):
 
@@ -28,6 +29,7 @@ class ContourDetectionNode(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.timer_ = self.create_timer(1.0, self.find_homography, callback_group=transform_cb_group)
         self.srv = self.create_service(PathClient, 'path_service', self.callback, callback_group=client_cb_group)
+        self.bridge = CvBridge()
 
     def find_homography(self):
         # assuming aruco markers go 1,2,3,4 clockwise. 1 is futhest away from robot base
@@ -105,11 +107,11 @@ class ContourDetectionNode(Node):
         y = []
         z = []
         # Open the text file for reading
-        with open("test.txt", "r") as file:
+        with open("points" + str(index) + ".txt", "r") as file:
             # Read each line in the file
             for line in file:
                 # Split each line into two values using a space as the delimiter
-                values = line.split()
+                values = line.split(', ')
                 if len(values) == 2:
                     x_value, y_value = map(float, values)
                     transformed_point = np.dot(self.H, [x_value, y_value, 1])
@@ -126,6 +128,64 @@ class ContourDetectionNode(Node):
         response.y = y
         self.get_logger().info("Returning response")
         return response
+    
+    def find_contours(self, index, cluster_labels, image):
+        segmented_image = np.zeros_like(image)
+
+        # Segmented Image for Label
+        colors = {
+            0: [0, 0, 255],  # Color for label 0
+            1: [0, 255, 0],  # Color for label 1
+            2: [255, 0, 0],  # Color for label 2
+            3: [0, 255, 255],  # Color for label 3
+            4: [255, 255, 0],  # Color for label 4
+            5: [255, 0, 255],  # Color for label 5
+        }
+
+        # Create a white background image
+        white_background = np.ones_like(image) * 255
+
+        label_to_show = index  # Specify the label to show (0 in this case)
+
+        for label in np.unique(cluster_labels):
+            mask = (cluster_labels == label)
+            if label == label_to_show:
+                color = colors[label]
+                segmented_image[mask.reshape(image.shape[:-1])] = color
+
+        output_image = np.ones_like(image) * 255
+   
+        for label in np.unique(cluster_labels):
+            mask = (cluster_labels == label)
+            if label == label_to_show:
+                color = colors[label]
+                output_image[mask.reshape(image.shape[:-1])] = color
+
+        contours, _ = cv.findContours(cv.cvtColor(segmented_image, cv.COLOR_BGR2GRAY), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+
+        # Simplify the contours using the Douglas-Peucker algorithm
+        simplified_contours = []
+        epsilon = 5  # Adjust the value of epsilon as needed for desired simplification
+        min_contour_area = 5
+
+        for contour in contours:
+            contour_area = cv.contourArea(contour)
+            if contour_area > min_contour_area:
+                simplified_contour = cv.approxPolyDP(contour, epsilon, closed=True)
+                simplified_contours.append(simplified_contour)
+
+        # Extract contour points from simplified contours
+        contour_points = []
+        for contour in simplified_contours:
+            for point in contour:
+                x, y = point[0]  # Extract x and y coordinates
+                contour_points.append((x, y))
+
+        # Save contour points to a text file
+        with open('points' + str(index) + '.txt', 'w') as file:
+            for x, y in contour_points:
+                file.write(f'{x}, {y}\n')
 
 
     def Tobinray(self, img):
@@ -145,10 +205,25 @@ class ContourDetectionNode(Node):
         np.savetxt('contour_points_2columns.txt', contour_points.reshape(-1, 2), fmt='%d')
 
     def image_callback(self, msg):
-        self.get_logger().info('Receivied smile face')
-        img = self.cv_bridge.imgmsg_to_cv2(msg, 'bgr8')
-        binary = self.Tobinray(img)
-        self.GetContours(binary, img)
+        # Convert the ROS Image message to an OpenCV image
+        cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+        b, g, r = cv.split(cv_image)
+
+        b = b.flatten()
+        g = g.flatten()
+        r = r.flatten()
+
+        color_samples = np.column_stack((r, g, b))
+
+        n_clusters = 6
+
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0)
+        cluster_labels = kmeans.fit_predict(color_samples)
+
+        i = 0
+        while(i < n_clusters):
+            self.find_contours(i, cluster_labels, cv_image)
+            i += 1
 
 
 def main(args=None):

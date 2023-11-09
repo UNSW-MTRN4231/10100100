@@ -31,18 +31,24 @@ def generate_launch_description():
             output="screen",
             # Add any node-specific parameters here
         ),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource("move_command.launch.py.py"),
-            launch_arguments={"enable_info": LaunchConfiguration("enable_info")}
-        ),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource("aruco_recognition.launch.py.py"),
-            launch_arguments={"enable_info": LaunchConfiguration("enable_info")}
-        ),
         Node(
             package="image_processing",
             executable="lines",
             name="lines",
+            output="screen",
+            # Add any node-specific parameters here
+        ),
+        Node(
+            package="transforms",
+            executable="paper",
+            name="paper",
+            output="screen",
+            # Add any node-specific parameters here
+        ),
+        Node(
+            package="transforms",
+            executable="static_camera_transform",
+            name="static_camera_transform",
             output="screen",
             # Add any node-specific parameters here
         ),

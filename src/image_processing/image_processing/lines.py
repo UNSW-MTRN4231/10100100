@@ -44,6 +44,7 @@ class lines(Node):
         return self.future.result()
 
     def send_path_to_moveit(self, msg):
+
         if not msg.data: return
         response = self.handle_service_request()
         

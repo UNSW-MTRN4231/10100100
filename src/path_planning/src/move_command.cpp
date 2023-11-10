@@ -103,17 +103,9 @@ class move_command : public rclcpp::Node
       return msg;
     }
 
-  private:
-
-    void robot_action_callback(const custom_messages::msg::RobotAction msg)
-    {
-      moveit_msgs::msg::RobotTrajectory trajectory;
-      std::vector<geometry_msgs::msg::Pose> waypoints;
-      tf2::Quaternion q;
-      q.setRPY(M_PI, 0.0, 0.0);
-      usleep(1000000);
-
-      // Pick up the pen
+    void move_pen(bool close_gripper, tf2::Quaternion q) {
+          // Pick up the pen
+      //get the transform
       try {
         t = tf_buffer_->lookupTransform(
           toFrameRel, fromFrameRel,
@@ -124,15 +116,40 @@ class move_command : public rclcpp::Node
           toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
         return;
       }
-      geometry_msgs::msg::Quaternion rotation = t.transform.rotation;
-      float yaw = tf2::getYaw(rotation);
-      z = 0.3;
-      float x = (0.08 + offset*penIndex) * cos(yaw);
-      float y = (0.08 + offset*penIndex) * sin(yaw);
-
-      auto poseMsg = generatePoseMsg(t.transform.translation.x + x, t.transform.translation.y + y, z, q.x(), q.y(), q.z(), q.w());
+      // get offset position on rack
+      float yaw = t.transform.rotation.z;
+      z_hight = 0.3;
+      float x = (0.08 + x_rack_offset*penIndex) * cos(yaw);
+      float y = (0.08 + x_rack_offset*penIndex) * sin(yaw);
+      // move above rack
+      auto poseMsg = generatePoseMsg(t.transform.translation.x + x, t.transform.translation.y + y, z_hight, q.x(), q.y(), q.z(), q.w());
+      waypoints.push_back(poseMsg);
+      // move down to pick up the pen
+      poseMsg = generatePoseMsg(t.transform.translation.x + x, t.transform.translation.y + y, z_pen, q.x(), q.y(), q.z(), q.w());
       waypoints.push_back(poseMsg);
 
+      if (close_gripper == true) {
+
+      } else if (close_gripper == false) {
+
+      }
+      // ######### //
+      //Need to tell griper to close or open
+      //move up 
+      poseMsg = generatePoseMsg(t.transform.translation.x + x, t.transform.translation.y + y, z_hight, q.x(), q.y(), q.z(), q.w());
+      waypoints.push_back(poseMsg);
+    }
+      
+
+  private:
+
+    void robot_action_callback(const custom_messages::msg::RobotAction msg)
+    {
+      q.setRPY(M_PI, 0.0, 0.0);
+      usleep(1000000);
+
+      // pick up pen
+      move_pen(true, q);
 
       for(double i = 0; i < msg.x.size(); i++) {
         // waiting period
@@ -141,10 +158,8 @@ class move_command : public rclcpp::Node
         // prev = i;   //set the prev current itorator
         // std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(scaler * distance))); 
 
-        
-        z = 0.3;
-        auto poseMsg = generatePoseMsg(msg.x[i], msg.y[i], z, q.x(), q.y(), q.z(), q.w());
-        
+        z_hight = 0.3;
+        auto poseMsg = generatePoseMsg(msg.x[i], msg.y[i], z_hight, q.x(), q.y(), q.z(), q.w());
         waypoints.push_back(poseMsg);
         
         // auto success = static_cast<bool>(move_group_interface->plan(planMessage));
@@ -157,6 +172,10 @@ class move_command : public rclcpp::Node
         // }
         std::cout << "here" << std::endl;
       }
+      // put down pen
+      move_pen(false, q);
+      ++ penIndex;
+
       std::cout << "moving to point" << std::endl;
       move_group_interface->setMaxVelocityScalingFactor(0.3);
       move_group_interface->setMaxAccelerationScalingFactor(0.3);
@@ -174,10 +193,13 @@ class move_command : public rclcpp::Node
   std::string fromFrameRel = "base_link";
   std::string toFrameRel = "pen_rack_4";
   geometry_msgs::msg::TransformStamped t;
+  moveit_msgs::msg::RobotTrajectory trajectory;
+  std::vector<geometry_msgs::msg::Pose> waypoints;
+  tf2::Quaternion q;
   int prev = 0;      // used as arrray index in topic call back
   int penIndex = 0;
-  geometry_msgs::msg::TransformStamped t;
-  float z = 0.3;
+  float z_hight = 0.3;
+  float z_pen = 0.1;
   float x_rack_offset = 0.06;
   float y_rack_offset = 0.0;
 

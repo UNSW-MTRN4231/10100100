@@ -30,6 +30,8 @@ class ContourDetectionNode(Node):
         self.timer_ = self.create_timer(1.0, self.find_homography, callback_group=transform_cb_group)
         self.srv = self.create_service(PathClient, 'path_service', self.callback, callback_group=client_cb_group)
         self.bridge = CvBridge()
+        self.image_shape = (640, 480)
+        self.found_contours = False
 
     def find_homography(self):
         # assuming aruco markers go 1,2,3,4 clockwise. 1 is futhest away from robot base
@@ -74,8 +76,8 @@ class ContourDetectionNode(Node):
 
         # will add "crop" from camera length resolution "x" variable.
         # this will stop lines from warping during transfromation by keeping the hight/lenght ratio the same as the paper
-        cam_height = 480
-        cam_length = 640
+        cam_height = self.image_shape[1]
+        cam_length = self.image_shape[0]
         
         dst_points = np.array([
             [corner1.transform.translation.x, corner1.transform.translation.y],  # Point 1
@@ -90,15 +92,13 @@ class ContourDetectionNode(Node):
             [cam_length, cam_height],  # New position for Point 3
             [0, cam_height]   # New position for Point 4
         ], dtype=np.float32)
-
-        self.get_logger().info(str(src_points))
-        self.get_logger().info(str(dst_points))
-        
+          
         # Find the perspective transformation matrix (homography)
         self.H, _ = cv.findHomography(src_points, dst_points)
-        self.get_logger().info(str(self.H))
+
 
     def callback(self, request, response):
+        
         self.get_logger().info("Recieved Request")
         # Process the request containing an array of two integers
         index = request.colour[0]
@@ -205,10 +205,12 @@ class ContourDetectionNode(Node):
         np.savetxt('contour_points_2columns.txt', contour_points.reshape(-1, 2), fmt='%d')
 
     def image_callback(self, msg):
+        if self.found_contours: return
+        self.found_contours = True
         # Convert the ROS Image message to an OpenCV image
         cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         b, g, r = cv.split(cv_image)
-
+        self.image_shape = cv_image.shape
         b = b.flatten()
         g = g.flatten()
         r = r.flatten()

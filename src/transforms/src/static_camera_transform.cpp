@@ -16,8 +16,8 @@ public:
     transformStamped_.header.frame_id = "base_link";
     transformStamped_.child_frame_id = "camera_frame";
 
-    transformStamped_.transform.translation.x = 1.27;
-    transformStamped_.transform.translation.y = 0.075;
+    transformStamped_.transform.translation.x = 1.31;
+    transformStamped_.transform.translation.y = 0.05;
     transformStamped_.transform.translation.z = 0.48;
 
     tf2::Quaternion q;

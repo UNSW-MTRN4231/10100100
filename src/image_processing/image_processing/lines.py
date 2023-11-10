@@ -37,10 +37,11 @@ class lines(Node):
         
 
     def handle_service_request(self):
+        self.get_logger().info("Sending Request")
         self.req.colour = [self.counter]
         self.future = self.client.call_async(self.req)
         rclpy.spin_until_future_complete(self, self.future)
-        self.contour += 2
+        self.counter += 2
         return self.future.result()
 
     def send_path_to_moveit(self, msg):

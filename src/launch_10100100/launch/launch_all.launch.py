@@ -52,4 +52,11 @@ def generate_launch_description():
             output="screen",
             # Add any node-specific parameters here
         ),
+        Node(
+            package="util_arduino_serial",
+            executable="util_arduino_serial",
+            name="util_arduino_serial",
+            output="screen",
+            # Add any node-specific parameters here
+        ),
     ])

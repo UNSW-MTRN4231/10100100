@@ -50,7 +50,7 @@ class SmileDetectionNode(Node):
                         # Publish the image to the /image_raw topic
                         self.current_image = frame
                         self.smile_detected = True
-                        print("detected smile")
+                        self.get_logger().info("Smile Detected")
         
 
     def __del__(self):

@@ -18,12 +18,12 @@ class PathPlanningNode : public rclcpp::Node {
 public:
     PathPlanningNode() : Node("path_planning_node") {
         
-        end_effector_control = false;
+        end_effector_control = true;
         
         // Publish to /arduinoCommand
         commands_publisher_ = create_publisher<std_msgs::msg::String>("/arduinoCommand", 10);
         timer_ = this->create_wall_timer(
-        3000ms, std::bind(&PathPlanningNode::timer_callback, this));
+        500ms, std::bind(&PathPlanningNode::timer_callback, this));
     
     }
 
@@ -33,12 +33,12 @@ private:
     {
         auto message = std_msgs::msg::String();
         if (end_effector_control == true) {
-            message.data = "R-6\n"; // close
+            message.data = "R-2\n"; // close
         } else {
             message.data = "R-50\n"; // open
         }
 
-        end_effector_control = !end_effector_control;
+        // end_effector_control = !end_effector_control;
         
         RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
         commands_publisher_->publish(message);

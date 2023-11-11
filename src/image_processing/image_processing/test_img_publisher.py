@@ -14,7 +14,7 @@ class TestImagePublisher(Node):
 
     def publish_image(self):
         try:
-            image = cv2.imread('aruco_image.jpg')  # Load the image from the file
+            image = cv2.imread('actual_workbench.png')  # Load the image from the file
             if image is not None:
                 image_msg = self.bridge.cv2_to_imgmsg(image, encoding='bgr8')
                 self.publisher.publish(image_msg)

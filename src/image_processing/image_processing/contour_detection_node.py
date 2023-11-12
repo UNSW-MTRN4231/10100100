@@ -87,10 +87,10 @@ class ContourDetectionNode(Node):
         ], dtype=np.float32)
         # Define the destination points (desired points)
         src_points = np.array([
-            [0, 0],  # New position for Point 1
-            [cam_length, 0],  # New position for Point 2
-            [cam_length, cam_height],  # New position for Point 3
-            [0, cam_height]   # New position for Point 4
+            [-50, 0], 
+            [-50, cam_height],
+            [cam_length + 50, cam_height],  # New position for Point 3
+            [cam_length + 50, 0], 
         ], dtype=np.float32)
           
         # Find the perspective transformation matrix (homography)
@@ -112,8 +112,8 @@ class ContourDetectionNode(Node):
             for line in file:
                 # Split each line into two values using a space as the delimiter
                 values = line.split(', ')
-                if len(values) == 2:
-                    x_value, y_value = map(float, values)
+                if len(values) == 3:
+                    x_value, y_value, z_value = map(float, values)
                     transformed_point = np.dot(self.H, [x_value, y_value, 1])
 
                     # Access the transformed coordinates
@@ -123,9 +123,11 @@ class ContourDetectionNode(Node):
                     transformed_y /= w
                     x.append(float(transformed_x))
                     y.append(float(transformed_y))
+                    z.append(float(z_value))
 
         response.x = x
         response.y = y
+        response.z = z
         self.get_logger().info("Returning response")
         return response
     
@@ -178,14 +180,20 @@ class ContourDetectionNode(Node):
         # Extract contour points from simplified contours
         contour_points = []
         for contour in simplified_contours:
+            x, y = contour[0][0]
+            z = 0.2
+            contour_points.append((x, y, z))
             for point in contour:
                 x, y = point[0]  # Extract x and y coordinates
-                contour_points.append((x, y))
+                z = 0
+                contour_points.append((x, y, z))
+            z = 0.2
+            contour_points.append((x, y, z))
 
         # Save contour points to a text file
         with open('points' + str(index) + '.txt', 'w') as file:
-            for x, y in contour_points:
-                file.write(f'{x}, {y}\n')
+            for x, y, z in contour_points:
+                file.write(f'{x}, {y}, {z}\n')
 
 
     def Tobinray(self, img):

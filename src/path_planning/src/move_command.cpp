@@ -11,6 +11,8 @@
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include "custom_messages/msg/robot_action.hpp"
+#include <rviz_visual_tools/rviz_visual_tools.hpp>
+#include <moveit_visual_tools/moveit_visual_tools.h>
 
 using namespace std::chrono_literals;
 
@@ -89,15 +91,27 @@ class move_command : public rclcpp::Node
       // Generate a table collision object based on the lab task
       auto col_object_backWall = generateCollisionObject( 2.4, 0.04, 1.0, 0.85, -0.30, 0.5, frame_id, "backWall");
       auto col_object_sideWall = generateCollisionObject( 0.04, 1.2, 1.0, -0.30, 0.25, 0.5, frame_id, "sideWall");
+      auto col_object_table = generateCollisionObject( 2.4, 1.2, 0.04, 0.85, 0.25, -0.03, frame_id, "table");
 
       moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
       // Apply table as a collision object
       planning_scene_interface.applyCollisionObject(col_object_backWall);
       planning_scene_interface.applyCollisionObject(col_object_sideWall);
+      planning_scene_interface.applyCollisionObject(col_object_table);
       // Publish to /arduinoCommand
       commands_publisher_ = create_publisher<std_msgs::msg::String>("/arduinoCommand", 10);
       timer_ = this->create_wall_timer(
       500ms, std::bind(&move_command::timer_callback, this), arduino_callback_group);
+
+      visual_tools_ = std::make_unique<moveit_visual_tools::MoveItVisualTools>(
+        std::shared_ptr<rclcpp::Node>(this),
+        "base_link",
+        rviz_visual_tools::RVIZ_MARKER_TOPIC,
+        move_group_interface->getRobotModel()
+      );
+      visual_tools_->deleteAllMarkers();
+      visual_tools_->loadRemoteControl();
+
 
     }
 
@@ -127,6 +141,20 @@ class move_command : public rclcpp::Node
       return msg;
     }
 
+    // Visualises a cartesian path in RVIZ with lines between each waypoint, and axes of each waypoint (optional) 
+    void visualize_cartesian_path(std::vector<geometry_msgs::msg::Pose> waypoints,std::string ns){ 
+      // Publish lines 
+      visual_tools_->publishPath(waypoints, rviz_visual_tools::RED, rviz_visual_tools::SMALL,ns); 
+      // Label points bool 
+
+      if (false) { 
+        for (size_t i = 0; i < waypoints.size(); i++) { 
+          visual_tools_->publishAxis(waypoints[i], rviz_visual_tools::SMALL, ns); 
+        } 
+      } 
+      visual_tools_->trigger(); 
+    }
+
     void move_pen(bool close_gripper, tf2::Quaternion q) {
           // Pick up the pen
       //get the transform
@@ -148,25 +176,30 @@ class move_command : public rclcpp::Node
       //waypoints.push_back(home);
       // get offset position on rack
       quaternionToEulerAngles(t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w, roll, pitch, yaw);
-      z_hight = 0.3;
+      z_hight = 0.5;
       float x = -(0.05 + x_rack_offset*penIndex) * cos(yaw + M_PI/2);
       float y = -(0.05 + x_rack_offset*penIndex) * sin(yaw+ M_PI/2);
       // float x = 0;
       // float y = 0;
       // move above rack
       auto poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_hight, q.x(), q.y(), q.z(), q.w());
-      
+      std::cout << "Z: " <<  z_hight << yaw << std::endl;
       waypoints.push_back(poseMsg);
       poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_hight -(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
+      std::cout << "Z: " <<  z_hight -(z_hight-z_pen)/5  << std::endl;
       waypoints.push_back(poseMsg);
       poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_hight -2*(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
+      std::cout << "Z: " <<  z_hight -2*(z_hight-z_pen)/5  << std::endl;
       waypoints.push_back(poseMsg);
       poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_hight -3*(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
+      std::cout << "Z: " <<  z_hight -3*(z_hight-z_pen)/5  << std::endl;
       waypoints.push_back(poseMsg);
       poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_hight -4*(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
+      std::cout << "Z: " <<  z_hight -4*(z_hight-z_pen)/5  << std::endl;
       waypoints.push_back(poseMsg);
       // move down to pick up the pen
       poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_pen, q.x(), q.y(), q.z(), q.w());
+      std::cout << "Z: " <<  z_pen  << std::endl;
       waypoints.push_back(poseMsg);
 
       move_group_interface->setMaxVelocityScalingFactor(0.3);
@@ -227,33 +260,19 @@ class move_command : public rclcpp::Node
       move_pen(true, q);
       waypoints.push_back(home);
       for(double i = 0; i < msg.x.size(); i++) {
-        // waiting period
-        // int scaler = 1;
-        // float distance = sqrt((msg.x[i] - msg.x[prev]) * (msg.x[i] - msg.x[prev]) + (msg.y[i] - msg.y[prev]) * (msg.y[i] - msg.y[prev]));
-        // prev = i;   //set the prev current itorator
-        // std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(scaler * distance))); 
 
         z_hight = 0.204;
-        auto poseMsg = generatePoseMsg(msg.x[i], msg.y[i], z_hight, q.x(), q.y(), q.z(), q.w());
+        auto poseMsg = generatePoseMsg(msg.x[i], msg.y[i], z_hight + msg.z[i], q.x(), q.y(), q.z(), q.w());
         waypoints.push_back(poseMsg);
         
-        // auto success = static_cast<bool>(move_group_interface->plan(planMessage));
-
-        // Execute movement to point 1
-        // if (success) {
-        
-        // } else {
-        //   std::cout << "Planning failed!" << std::endl;
-        // }
-        //std::cout << "here" << std::endl;
       }
       // put down pen
       waypoints.push_back(home);
-
+      visualize_cartesian_path(waypoints, "Path");
       move_pen(false, q);
       ++ penIndex;
       std::cout << "index: " << penIndex << std::endl;
-
+      
       std::cout << "moving to point" << std::endl;
       move_group_interface->setMaxVelocityScalingFactor(0.3);
       move_group_interface->setMaxAccelerationScalingFactor(0.3);
@@ -285,7 +304,7 @@ class move_command : public rclcpp::Node
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr commands_publisher_;
   rclcpp::CallbackGroup::SharedPtr move_callback_group;
   rclcpp::CallbackGroup::SharedPtr arduino_callback_group;
-
+  rviz_visual_tools::RvizVisualToolsPtr visual_tools_;
 };
 
 

@@ -13,10 +13,10 @@ class CameraInfoPublisher(Node):
         self.height = 480  # Set the image height
         self.camera_name = 'narrow_stereo'  # Set the camera name
         self.distortion_model = 'plumb_bob'  # Set the distortion model
-        self.d = [0.0, 0.0, 0.0, 0.0, 0.0]  # Set distortion coefficients
-        self.k = [525.0, 0.0, 320.0, 0.0, 525.0, 240.0, 0.0, 0.0, 1.0]  # Set camera matrix (intrinsic)
+        self.d = [0.041511, -0.135081, 0.002229, 0.001117, 0.000000]  # Set distortion coefficients
+        self.k = [679.06871,   0.0     , 331.0719 , 0.0     , 681.46081, 244.11746,0.0     ,   0.0     ,   1.0     ]  # Set camera matrix (intrinsic)
         self.r = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]  # Set rotation matrix
-        self.p = [525.0, 0.0, 320.0, 0.0, 0.0, 525.0, 240.0, 0.0, 0.0, 0.0, 1.0, 0.0]  # Set projection matrix
+        self.p = [679.81445,   0.0     , 331.16923,   0.0     ,0.0     , 682.45007, 244.24562,   0.0     ,0.0     ,   0.0     ,   1.0     ,   0.0     ]  # Set projection matrix
         self.binning_x = 0  # Set binning along the image x-axis
         self.binning_y = 0  # Set binning along the image y-axis
         self.timer = self.create_timer(1, self.publish_camera_info) 

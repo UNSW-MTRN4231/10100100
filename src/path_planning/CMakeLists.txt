@@ -18,6 +18,8 @@ find_package(moveit_core REQUIRED)
 find_package(moveit_ros_planning REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(rviz_visual_tools REQUIRED)
+find_package(moveit_visual_tools REQUIRED)
 
 # Add executable
 add_executable(brain_node src/brain_node.cpp)
@@ -49,6 +51,8 @@ ament_target_dependencies(move_command
   moveit_ros_planning_interface
   tf2_ros
   custom_messages
+  rviz_visual_tools
+  moveit_visual_tools
 )
 
 # Declare the C++ executable

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="endEffector">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.0611404866094565 -0.0359781303176389 0.0077633152915725"
+        rpy="0 0 0" />
+      <mass
+        value="0.0916970751404029" />
+      <inertia
+        ixx="5.82164810314194E-05"
+        ixy="8.74557782688379E-06"
+        ixz="1.15067031469303E-06"
+        iyy="5.22850721542855E-05"
+        iyz="7.94089505144477E-07"
+        izz="7.57224960930425E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://endEffector/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://endEffector/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="link_1">
+    <inertial>
+      <origin
+        xyz="0.011277 -0.0044625 -0.017457"
+        rpy="0 0 0" />
+      <mass
+        value="0.0087567" />
+      <inertia
+        ixx="2.2797E-06"
+        ixy="-3.6937E-14"
+        ixz="2.1629E-07"
+        iyy="3.4877E-06"
+        iyz="6.2196E-09"
+        izz="1.2287E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://endEffector/meshes/link_1.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.79216 0.81961 0.93333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://endEffector/meshes/link_1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_1"
+    type="continuous">
+    <origin
+      xyz="-0.038897 -0.011652 0.0010482"
+      rpy="-1.5708 0 -1.9541" />
+    <parent
+      link="base_link" />
+    <child
+      link="link_1" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+</robot>

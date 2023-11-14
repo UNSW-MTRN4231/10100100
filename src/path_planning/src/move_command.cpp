@@ -1,6 +1,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include <chrono>
 #include <functional>
 #include <string>
@@ -80,6 +81,7 @@ class move_command : public rclcpp::Node
       tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
       tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
+      publisher_ = create_publisher<std_msgs::msg::Bool>("/image_obtained", 10);
 
       // Generate the movegroup interface
       move_group_interface = std::make_unique<moveit::planning_interface::MoveGroupInterface>(std::shared_ptr<rclcpp::Node>(this), "ur_manipulator");
@@ -291,6 +293,12 @@ class move_command : public rclcpp::Node
       waypoints.clear();
       move_pen(false, q, home);
       penIndex += 2;
+      if (penIndex < 5) {
+        std_msgs::msg::Bool pub_msg;
+        pub_msg.data = true;
+        publisher_->publish(pub_msg);
+      }
+      
     }
 
 
@@ -300,6 +308,7 @@ class move_command : public rclcpp::Node
   std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface;
   rclcpp::Subscription<custom_messages::msg::RobotAction>::SharedPtr subscriber_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr publisher_;
   std::string fromFrameRel = "pen_rack_4";
   std::string toFrameRel = "base_link";
   geometry_msgs::msg::TransformStamped t;

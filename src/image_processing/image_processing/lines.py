@@ -60,7 +60,7 @@ class lines(Node):
         self.get_logger().info("about to send")
         self.publisher.publish(send_msg)
         self.get_logger().info("sending path")
-        return
+
 
 
 def main(args=None):

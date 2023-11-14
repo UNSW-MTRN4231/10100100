@@ -16,7 +16,7 @@ class SmileDetectionNode(Node):
         self.counter = 0
         self.smile_detected = False
         self.subscriber
-        self.video_capture = cv2.VideoCapture(0)
+        self.video_capture = cv2.VideoCapture(1)
         self.timer = self.create_timer(0.1, self.timer_callback)
     
     def handle_command(self, msg):

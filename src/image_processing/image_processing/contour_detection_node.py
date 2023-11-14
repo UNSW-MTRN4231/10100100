@@ -41,7 +41,7 @@ class ContourDetectionNode(Node):
         try:
             corner1 = self.tf_buffer.lookup_transform(target_frame, source_frame, rclpy.time.Time())
         except:
-            self.get_logger().info("Can't find canvas")
+            self.get_logger().info("Can't find canvas 0")
             return
 
         source_frame = "paper_corner_1"
@@ -49,7 +49,7 @@ class ContourDetectionNode(Node):
         try:
             corner2 = self.tf_buffer.lookup_transform(target_frame, source_frame, rclpy.time.Time())
         except:
-            self.get_logger().info("Can't find canvas")
+            self.get_logger().info("Can't find canvas 1")
             return
 
         source_frame = "paper_corner_2"
@@ -57,7 +57,7 @@ class ContourDetectionNode(Node):
         try:
             corner3 = self.tf_buffer.lookup_transform(target_frame, source_frame, rclpy.time.Time())
         except:
-            self.get_logger().info("Can't find canvas")
+            self.get_logger().info("Can't find canvas 2")
             return
 
         source_frame = "paper_corner_3"    
@@ -65,7 +65,7 @@ class ContourDetectionNode(Node):
         try:
             corner4 = self.tf_buffer.lookup_transform(target_frame, source_frame, rclpy.time.Time())
         except:
-            self.get_logger().info("Can't find canvas")
+            self.get_logger().info("Can't find canvas 3")
             return
 
 

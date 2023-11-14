@@ -83,7 +83,7 @@ class move_command : public rclcpp::Node
 
       // Generate the movegroup interface
       move_group_interface = std::make_unique<moveit::planning_interface::MoveGroupInterface>(std::shared_ptr<rclcpp::Node>(this), "ur_manipulator");
-      move_group_interface->setPlanningTime(10.0);
+      move_group_interface->setPlanningTime(30.0);
 
       std::string frame_id = move_group_interface->getPlanningFrame();
 
@@ -101,7 +101,7 @@ class move_command : public rclcpp::Node
       // Publish to /arduinoCommand
       commands_publisher_ = create_publisher<std_msgs::msg::String>("/arduinoCommand", 10);
       timer_ = this->create_wall_timer(
-      500ms, std::bind(&move_command::timer_callback, this), arduino_callback_group);
+      1000ms, std::bind(&move_command::timer_callback, this), arduino_callback_group);
 
       visual_tools_ = std::make_unique<moveit_visual_tools::MoveItVisualTools>(
         std::shared_ptr<rclcpp::Node>(this),
@@ -155,7 +155,9 @@ class move_command : public rclcpp::Node
       visual_tools_->trigger(); 
     }
 
-    void move_pen(bool close_gripper, tf2::Quaternion q) {
+    void move_pen(bool close_gripper, tf2::Quaternion q, geometry_msgs::msg::Pose home) {
+      std::vector<geometry_msgs::msg::Pose> waypoints;
+      moveit_msgs::msg::RobotTrajectory trajectory;
           // Pick up the pen
       //get the transform
       try {
@@ -172,13 +174,12 @@ class move_command : public rclcpp::Node
       double roll;
       double pitch;
       double yaw;
-      //auto home = generatePoseMsg(-0.4301,-0.1435, 0.4, q.x(), q.y(), q.z(), q.w());
-      //waypoints.push_back(home);
+      waypoints.push_back(home);
       // get offset position on rack
       quaternionToEulerAngles(t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w, roll, pitch, yaw);
       z_hight = 0.5;
-      float x = -(0.05 + x_rack_offset*penIndex) * cos(yaw + M_PI/2);
-      float y = -(0.05 + x_rack_offset*penIndex) * sin(yaw+ M_PI/2);
+      float x = -(0.12 + x_rack_offset*penIndex) * cos(yaw + M_PI/2)-griper_offset_x;
+      float y = -(0.12 + x_rack_offset*penIndex) * sin(yaw+ M_PI/2)+0.02;
       // float x = 0;
       // float y = 0;
       // move above rack
@@ -208,8 +209,9 @@ class move_command : public rclcpp::Node
       move_group_interface->execute(trajectory);
       waypoints.clear();
       usleep(2000000);
+      std::cout << "end effector change" << std::endl;
       end_effector_control = close_gripper;
-      usleep(3000000);
+      usleep(1000000);
       // ######### //
       //Need to tell griper to close or open
       //move up 
@@ -226,6 +228,12 @@ class move_command : public rclcpp::Node
 
       // home = generatePoseMsg(-0.4301,-0.1435, 0.4, q.x(), q.y(), q.z(), q.w());
       // waypoints.push_back(home);
+
+      move_group_interface->setMaxVelocityScalingFactor(0.3);
+      move_group_interface->setMaxAccelerationScalingFactor(0.3);
+      move_group_interface->computeCartesianPath(waypoints, 0.1, 0.0, trajectory);
+      move_group_interface->execute(trajectory);
+      waypoints.clear();
       
       std::cout << "X: " << x << "Y: " << y << "Yaw: " << yaw << std::endl;
       std::cout << "here" << std::endl;
@@ -249,36 +257,40 @@ class move_command : public rclcpp::Node
 
     void robot_action_callback(const custom_messages::msg::RobotAction msg)
     {
-      
+      std::vector<geometry_msgs::msg::Pose> waypoints;
+      moveit_msgs::msg::RobotTrajectory trajectory;
+
       tf2::Quaternion q;
       
       q.setRPY(M_PI, 0.0, 0.0);
-      auto home = generatePoseMsg(msg.x[0], msg.y[0], 0.5, q.x(), q.y(), q.z(), q.w());
+      auto home = generatePoseMsg(msg.x[0]-griper_offset_x, msg.y[0], 0.5, q.x(), q.y(), q.z(), q.w());
       usleep(1000000);
-      waypoints.push_back(home);
       // pick up pen
-      move_pen(true, q);
-      waypoints.push_back(home);
+      move_pen(true, q, home);
+      
       for(double i = 0; i < msg.x.size(); i++) {
 
-        z_hight = 0.204;
-        auto poseMsg = generatePoseMsg(msg.x[i], msg.y[i], z_hight + msg.z[i], q.x(), q.y(), q.z(), q.w());
+        z_hight = 0.2025;
+        auto poseMsg = generatePoseMsg(msg.x[i]-griper_offset_x, msg.y[i], z_hight + msg.z[i], q.x(), q.y(), q.z(), q.w());
         waypoints.push_back(poseMsg);
         
       }
       // put down pen
       waypoints.push_back(home);
       visualize_cartesian_path(waypoints, "Path");
-      move_pen(false, q);
-      ++ penIndex;
+      
+      
       std::cout << "index: " << penIndex << std::endl;
       
       std::cout << "moving to point" << std::endl;
       move_group_interface->setMaxVelocityScalingFactor(0.3);
       move_group_interface->setMaxAccelerationScalingFactor(0.3);
       move_group_interface->computeCartesianPath(waypoints, 0.1, 0.0, trajectory);
+      std::cout << "Length path: " << waypoints.size() << std::endl;
       move_group_interface->execute(trajectory);
       waypoints.clear();
+      move_pen(false, q, home);
+      penIndex += 2;
     }
 
 
@@ -291,13 +303,12 @@ class move_command : public rclcpp::Node
   std::string fromFrameRel = "pen_rack_4";
   std::string toFrameRel = "base_link";
   geometry_msgs::msg::TransformStamped t;
-  moveit_msgs::msg::RobotTrajectory trajectory;
-  std::vector<geometry_msgs::msg::Pose> waypoints;
+  
   int prev = 0;      // used as arrray index in topic call back
   int penIndex = 0;
   float z_hight = 0.5;
-  float z_pen = 0.4;
-  float x_rack_offset = 0.062;
+  float z_pen = 0.3;
+  float x_rack_offset = 0.055;
   float y_rack_offset = 0.0;
   // control end effector, true -> close, false -> open
   bool end_effector_control;
@@ -305,6 +316,7 @@ class move_command : public rclcpp::Node
   rclcpp::CallbackGroup::SharedPtr move_callback_group;
   rclcpp::CallbackGroup::SharedPtr arduino_callback_group;
   rviz_visual_tools::RvizVisualToolsPtr visual_tools_;
+  float griper_offset_x = 0.037;
 };
 
 

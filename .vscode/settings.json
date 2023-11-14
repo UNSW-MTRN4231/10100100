@@ -73,7 +73,9 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "any": "cpp"
+        "any": "cpp",
+        "*.ipp": "cpp",
+        "*.txx": "cpp"
     },
     "ros.distro": "humble",
     "python.autoComplete.extraPaths": [

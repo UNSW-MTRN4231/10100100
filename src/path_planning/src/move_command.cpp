@@ -65,6 +65,7 @@ class move_command : public rclcpp::Node
     {
       arduino_callback_group = nullptr;
       move_callback_group = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+      tf_callback_group = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
       rclcpp::SubscriptionOptions options;
       options.callback_group = move_callback_group;
@@ -103,7 +104,10 @@ class move_command : public rclcpp::Node
       // Publish to /arduinoCommand
       commands_publisher_ = create_publisher<std_msgs::msg::String>("/arduinoCommand", 10);
       timer_ = this->create_wall_timer(
-      1000ms, std::bind(&move_command::timer_callback, this), arduino_callback_group);
+      2000ms, std::bind(&move_command::timer_callback, this), arduino_callback_group);
+
+      timer_tf_ = this->create_wall_timer(
+      500ms, std::bind(&move_command::transform_lookup, this), arduino_callback_group);
 
       visual_tools_ = std::make_unique<moveit_visual_tools::MoveItVisualTools>(
         std::shared_ptr<rclcpp::Node>(this),
@@ -162,70 +166,59 @@ class move_command : public rclcpp::Node
       moveit_msgs::msg::RobotTrajectory trajectory;
           // Pick up the pen
       //get the transform
-      try {
-        t = tf_buffer_->lookupTransform(
-          toFrameRel, fromFrameRel,
-          tf2::TimePointZero);
-      } catch (const tf2::TransformException & ex) {
-        RCLCPP_INFO(
-          this->get_logger(), "Could not transform %s to %s: %s",
-          toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
-        return;
-      }
+      
 
-      double roll;
-      double pitch;
-      double yaw;
+      
       waypoints.push_back(home);
       // get offset position on rack
-      quaternionToEulerAngles(t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w, roll, pitch, yaw);
+      
       z_hight = 0.5;
-      float x = -(0.12 + x_rack_offset*penIndex) * cos(yaw + M_PI/2)-griper_offset_x;
-      float y = -(0.12 + x_rack_offset*penIndex) * sin(yaw+ M_PI/2)+0.02;
+      float x = -(0.12 + x_rack_offset*penIndex) * cos(pen_yaw + M_PI/2)-griper_offset_x;
+      float y = -(0.12 + x_rack_offset*penIndex) * sin(pen_yaw+ M_PI/2)+0.02;
       // float x = 0;
       // float y = 0;
       // move above rack
-      auto poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_hight, q.x(), q.y(), q.z(), q.w());
-      std::cout << "Z: " <<  z_hight << yaw << std::endl;
+      auto poseMsg = generatePoseMsg(pen_x - x, pen_y + y, z_hight, q.x(), q.y(), q.z(), q.w());
+      std::cout << "Z: " <<  z_hight << pen_yaw << std::endl;
       waypoints.push_back(poseMsg);
-      poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_hight -(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
+      poseMsg = generatePoseMsg(pen_x - x, pen_y + y, z_hight -(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
       std::cout << "Z: " <<  z_hight -(z_hight-z_pen)/5  << std::endl;
       waypoints.push_back(poseMsg);
-      poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_hight -2*(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
+      poseMsg = generatePoseMsg(pen_x - x, pen_y + y, z_hight -2*(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
       std::cout << "Z: " <<  z_hight -2*(z_hight-z_pen)/5  << std::endl;
       waypoints.push_back(poseMsg);
-      poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_hight -3*(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
+      poseMsg = generatePoseMsg(pen_x - x, pen_y + y, z_hight -3*(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
       std::cout << "Z: " <<  z_hight -3*(z_hight-z_pen)/5  << std::endl;
       waypoints.push_back(poseMsg);
-      poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_hight -4*(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
+      poseMsg = generatePoseMsg(pen_x - x, pen_y + y, z_hight -4*(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
       std::cout << "Z: " <<  z_hight -4*(z_hight-z_pen)/5  << std::endl;
       waypoints.push_back(poseMsg);
       // move down to pick up the pen
-      poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_pen, q.x(), q.y(), q.z(), q.w());
+      poseMsg = generatePoseMsg(pen_x - x, pen_y + y, z_pen, q.x(), q.y(), q.z(), q.w());
       std::cout << "Z: " <<  z_pen  << std::endl;
       waypoints.push_back(poseMsg);
 
-      move_group_interface->setMaxVelocityScalingFactor(0.3);
-      move_group_interface->setMaxAccelerationScalingFactor(0.3);
+      move_group_interface->setMaxVelocityScalingFactor(0.001);
+      move_group_interface->setMaxAccelerationScalingFactor(0.001);
       move_group_interface->computeCartesianPath(waypoints, 0.1, 0.0, trajectory);
       move_group_interface->execute(trajectory);
       waypoints.clear();
-      usleep(2000000);
+      usleep(3000000);
       std::cout << "end effector change" << std::endl;
       end_effector_control = close_gripper;
-      usleep(1000000);
+      usleep(5000000);
       // ######### //
       //Need to tell griper to close or open
       //move up 
-      poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_hight -4*(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
+      poseMsg = generatePoseMsg(pen_x - x, pen_y + y, z_hight -4*(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
       waypoints.push_back(poseMsg);
-      poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_hight -3*(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
+      poseMsg = generatePoseMsg(pen_x - x, pen_y + y, z_hight -3*(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
       waypoints.push_back(poseMsg);
-      poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_hight -2*(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
+      poseMsg = generatePoseMsg(pen_x - x, pen_y + y, z_hight -2*(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
       waypoints.push_back(poseMsg);
-      poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_hight -(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
+      poseMsg = generatePoseMsg(pen_x - x, pen_y + y, z_hight -(z_hight-z_pen)/5, q.x(), q.y(), q.z(), q.w());
       waypoints.push_back(poseMsg);
-      poseMsg = generatePoseMsg(t.transform.translation.x - x, t.transform.translation.y + y, z_hight, q.x(), q.y(), q.z(), q.w());
+      poseMsg = generatePoseMsg(pen_x - x, pen_y + y, z_hight, q.x(), q.y(), q.z(), q.w());
       waypoints.push_back(poseMsg);
 
       // home = generatePoseMsg(-0.4301,-0.1435, 0.4, q.x(), q.y(), q.z(), q.w());
@@ -237,8 +230,35 @@ class move_command : public rclcpp::Node
       move_group_interface->execute(trajectory);
       waypoints.clear();
       
-      std::cout << "X: " << x << "Y: " << y << "Yaw: " << yaw << std::endl;
+      std::cout << "X: " << x << "Y: " << y << "pen_yaw: " << pen_yaw << std::endl;
       std::cout << "here" << std::endl;
+    }
+
+    void transform_lookup() {
+      try {
+        t = tf_buffer_->lookupTransform(
+          toFrameRel, fromFrameRel,
+          tf2::TimePointZero);
+      } catch (const tf2::TransformException & ex) {
+        RCLCPP_INFO(
+          this->get_logger(), "Could not transform %s to %s: %s",
+          toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
+        return;
+      }
+      double roll;
+      double pitch;
+      double yaw;
+      quaternionToEulerAngles(t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w, roll, pitch, yaw);
+      if(pen_x == 0) {
+        pen_x = t.transform.translation.x;
+        pen_y = t.transform.translation.y;
+        
+        pen_yaw = yaw;
+      } else {
+        pen_x = pen_x +  (t.transform.translation.x - pen_x)/5;
+        pen_y = pen_y + (t.transform.translation.y - pen_y)/5;
+        pen_yaw = pen_yaw + (yaw-pen_yaw)/5;
+      }
     }
       
 
@@ -272,7 +292,7 @@ class move_command : public rclcpp::Node
       
       for(double i = 0; i < msg.x.size(); i++) {
 
-        z_hight = 0.2025;
+        z_hight = 0.2035;
         auto poseMsg = generatePoseMsg(msg.x[i]-griper_offset_x, msg.y[i], z_hight + msg.z[i], q.x(), q.y(), q.z(), q.w());
         waypoints.push_back(poseMsg);
         
@@ -304,6 +324,7 @@ class move_command : public rclcpp::Node
 
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
   rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::TimerBase::SharedPtr timer_tf_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
   std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface;
@@ -316,16 +337,20 @@ class move_command : public rclcpp::Node
   int prev = 0;      // used as arrray index in topic call back
   int penIndex = 0;
   float z_hight = 0.5;
-  float z_pen = 0.3;
-  float x_rack_offset = 0.055;
+  float z_pen = 0.27;
+  float x_rack_offset = 0.0575;
   float y_rack_offset = 0.0;
   // control end effector, true -> close, false -> open
   bool end_effector_control;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr commands_publisher_;
   rclcpp::CallbackGroup::SharedPtr move_callback_group;
+  rclcpp::CallbackGroup::SharedPtr tf_callback_group;
   rclcpp::CallbackGroup::SharedPtr arduino_callback_group;
   rviz_visual_tools::RvizVisualToolsPtr visual_tools_;
   float griper_offset_x = 0.037;
+  float pen_x = 0.0;
+  float pen_y = 0.0;
+  float pen_yaw = 0.0;
 };
 
 

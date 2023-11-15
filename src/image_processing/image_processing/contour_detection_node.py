@@ -90,10 +90,10 @@ class ContourDetectionNode(Node):
         ], dtype=np.float32)
         # Define the destination points (desired points)
         src_points = np.array([
-            [-50, 0], 
-            [-50, cam_height],
-            [cam_length + 50, cam_height],  # New position for Point 3
-            [cam_length + 50, 0], 
+            [-75, 0], 
+            [-75, cam_height],
+            [cam_length + 75, cam_height],  # New position for Point 3
+            [cam_length + 75, 0], 
         ], dtype=np.float32)
           
         # Find the perspective transformation matrix (homography)

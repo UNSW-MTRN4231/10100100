@@ -232,7 +232,7 @@ class ContourDetectionNode(Node):
 
         color_samples = np.column_stack((r, g, b))
 
-        n_clusters = 6
+        n_clusters = 5
 
         kmeans = KMeans(n_clusters=n_clusters, random_state=0)
         cluster_labels = kmeans.fit_predict(color_samples)

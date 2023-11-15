@@ -4,9 +4,18 @@ from launch_ros.actions import Node
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+from launch.actions import ExecuteProcess
 
 def generate_launch_description():
     return LaunchDescription([
+        ExecuteProcess(
+            cmd=['./setupRealur5e.sh'],
+            output='screen',
+        ),
+        ExecuteProcess(
+            cmd=['./camera.sh'],
+            output='screen',
+        ),
         # Launch the 'dummy_camera_info' node
         Node(
             package="image_processing",
@@ -49,5 +58,11 @@ def generate_launch_description():
             name="util_arduino_serial",
             output="screen",
             # Add any node-specific parameters here
+        ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource('path_planning/launch/move_command.launch.py'),
+            PythonLaunchDescriptionSource('ros2_aruco/launch/aruco_recognition.launch.py'),
+
+
         ),
     ])

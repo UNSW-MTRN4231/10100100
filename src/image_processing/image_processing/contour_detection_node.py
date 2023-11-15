@@ -7,6 +7,7 @@ from tf2_ros import TransformListener
 from tf2_ros.buffer import Buffer
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
+from std_msgs.msg import Bool
 from cv_bridge import CvBridge
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 import cv2 as cv
@@ -29,9 +30,11 @@ class ContourDetectionNode(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.timer_ = self.create_timer(1.0, self.find_homography, callback_group=transform_cb_group)
         self.srv = self.create_service(PathClient, 'path_service', self.callback, callback_group=client_cb_group)
+        self.pub = self.create_publisher(Bool, '/image_obtained', 10)
         self.bridge = CvBridge()
         self.image_shape = (640, 480)
         self.found_contours = False
+        self.notified_processes = False
 
     def find_homography(self):
         # assuming aruco markers go 1,2,3,4 clockwise. 1 is futhest away from robot base
@@ -87,10 +90,10 @@ class ContourDetectionNode(Node):
         ], dtype=np.float32)
         # Define the destination points (desired points)
         src_points = np.array([
-            [-50, 0], 
-            [-50, cam_height],
-            [cam_length + 50, cam_height],  # New position for Point 3
-            [cam_length + 50, 0], 
+            [-75, 0], 
+            [-75, cam_height],
+            [cam_length + 75, cam_height],  # New position for Point 3
+            [cam_length + 75, 0], 
         ], dtype=np.float32)
           
         # Find the perspective transformation matrix (homography)
@@ -194,6 +197,10 @@ class ContourDetectionNode(Node):
         with open('points' + str(index) + '.txt', 'w') as file:
             for x, y, z in contour_points:
                 file.write(f'{x}, {y}, {z}\n')
+        if not self.notified_processes:
+            msg = Bool()
+            self.pub.publish(msg)
+            self.notified_processes = True
 
 
     def Tobinray(self, img):

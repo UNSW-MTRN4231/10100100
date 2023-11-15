@@ -16,7 +16,7 @@ class SmileDetectionNode(Node):
         self.counter = 0
         self.smile_detected = False
         self.subscriber
-        self.video_capture = cv2.VideoCapture(1)
+        self.video_capture = cv2.VideoCapture(2)
         self.timer = self.create_timer(0.1, self.timer_callback)
     
     def handle_command(self, msg):
@@ -25,8 +25,10 @@ class SmileDetectionNode(Node):
             self.smile_detected = False
 
     def detect(self, gray):
+        self.get_logger().info("Detecting...")
         faces = self.face_cascade.detectMultiScale(gray, 1.3, 5)
         for (x, y, w, h) in faces:
+            self.get_logger().info("Face Detected")
             roi_gray = gray[y:y + h, x:x + w]
             smiles = self.smile_cascade.detectMultiScale(roi_gray, 1.8, 20)
             if len(smiles) > 0:
@@ -36,7 +38,6 @@ class SmileDetectionNode(Node):
     def timer_callback(self):
         if self.video_capture.isOpened():
             _, frame = self.video_capture.read()
-            cv2.imshow('Video', frame)
             if (self.smile_detected):
                 ros_image = self.cv_bridge.cv2_to_imgmsg(self.current_image, encoding="bgr8")
                 self.publisher.publish(ros_image)
@@ -45,8 +46,9 @@ class SmileDetectionNode(Node):
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 smile = self.detect(gray)
                 if smile:
+                    self.get_logger().info("Smile Detected")
                     self.counter += 1
-                    if self.counter > 10:
+                    if self.counter > 5:
                         # Publish the image to the /image_raw topic
                         self.current_image = frame
                         self.smile_detected = True

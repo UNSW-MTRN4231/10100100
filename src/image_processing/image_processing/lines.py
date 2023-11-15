@@ -39,16 +39,13 @@ class lines(Node):
     def handle_service_request(self):
         self.get_logger().info("Sending Request")
         self.req.colour = [self.counter]
-        self.future = self.client.call_async(self.req)
-        rclpy.spin_until_future_complete(self, self.future, timeout_sec=10)
-        self.counter += 2
-        return self.future.result()
+        response = self.client.call(self.req)
+        return response
 
     def send_path_to_moveit(self, msg):
         self.get_logger().info("Recieved callback")
-
-        response = self.handle_service_request()
         
+        response = self.handle_service_request()
         self.get_logger().info("recieved response")
         send_msg = RobotAction()
         send_msg.command = "draw"
@@ -60,6 +57,7 @@ class lines(Node):
         self.get_logger().info("about to send")
         self.publisher.publish(send_msg)
         self.get_logger().info("sending path")
+        self.counter += 2
 
 
 

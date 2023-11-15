@@ -4,6 +4,7 @@ from launch_ros.actions import Node
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+from launch.actions import ExecuteProcess
 
 def generate_launch_description():
     return LaunchDescription([
@@ -50,4 +51,11 @@ def generate_launch_description():
             output="screen",
             # Add any node-specific parameters here
         ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource('/home/mtrn/4231/10100100/src/path_planning/launch/move_command.launch.py'),
+        ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource('/home/mtrn/4231/10100100/src/ros2_aruco/launch/aruco_recognition.launch.py'),
+        ),  
     ])
+

@@ -8,6 +8,14 @@ from launch.actions import ExecuteProcess
 
 def generate_launch_description():
     return LaunchDescription([
+        ExecuteProcess(
+            cmd=['./setupRealur5e.sh'],
+            output='screen',
+        ),
+        ExecuteProcess(
+            cmd=['./camera.sh'],
+            output='screen',
+        ),
         # Launch the 'dummy_camera_info' node
         Node(
             package="image_processing",
@@ -58,4 +66,5 @@ def generate_launch_description():
             PythonLaunchDescriptionSource('/home/mtrn/4231/10100100/src/ros2_aruco/launch/aruco_recognition.launch.py'),
         ),  
     ])
+
 

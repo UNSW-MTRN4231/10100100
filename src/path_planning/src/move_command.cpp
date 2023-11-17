@@ -337,7 +337,7 @@ class move_command : public rclcpp::Node
   int prev = 0;      // used as arrray index in topic call back
   int penIndex = 0;
   float z_hight = 0.5;
-  float z_pen = 0.27;
+  float z_pen = 0.285;
   float x_rack_offset = 0.0575;
   float y_rack_offset = 0.0;
   // control end effector, true -> close, false -> open

@@ -60,9 +60,11 @@ def generate_launch_description():
             # Add any node-specific parameters here
         ),
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource('path_planning/launch/move_command.launch.py'),
-            PythonLaunchDescriptionSource('ros2_aruco/launch/aruco_recognition.launch.py'),
-
-
+            PythonLaunchDescriptionSource('/home/mtrn/4231/10100100/src/path_planning/launch/move_command.launch.py'),
         ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource('/home/mtrn/4231/10100100/src/ros2_aruco/launch/aruco_recognition.launch.py'),
+        ),  
     ])
+
+
